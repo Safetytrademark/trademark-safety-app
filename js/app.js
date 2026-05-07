@@ -1289,7 +1289,6 @@ function validateStep(step) {
     if (!date) { showError('foremanDate', 'Please select a date.'); return false; }
     state.foremanName = name;
     state.date = date;
-    state.workersOnSite = document.getElementById('workersOnSite').value;
     return true;
   }
 
