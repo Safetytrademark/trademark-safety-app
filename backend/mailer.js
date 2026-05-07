@@ -1,38 +1,11 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
-function createTransport() {
-  const { EMAIL_SERVICE, EMAIL_USER, EMAIL_PASS, EMAIL_HOST, EMAIL_PORT } = process.env;
-  const service = (EMAIL_SERVICE || '').toLowerCase();
-
-  if (service === 'gmail') {
-    return nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user: EMAIL_USER, pass: EMAIL_PASS }
-    });
-  }
-
-  if (service === 'outlook' || service === 'microsoft365' || service === 'office365') {
-    return nodemailer.createTransport({
-      host: 'smtp.office365.com',
-      port: 587,
-      secure: false,
-      auth: { user: EMAIL_USER, pass: EMAIL_PASS },
-      tls: { ciphers: 'SSLv3', rejectUnauthorized: false }
-    });
-  }
-
-  // Generic SMTP fallback
-  return nodemailer.createTransport({
-    host: EMAIL_HOST || 'smtp.gmail.com',
-    port: parseInt(EMAIL_PORT) || 587,
-    secure: false,
-    auth: { user: EMAIL_USER, pass: EMAIL_PASS }
-  });
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY);
 }
 
 async function sendSafetySubmission({ foremanName, project, submissionType, date, workersOnSite, fields, pdfBuffer, pdfName, photos }) {
-  const { EMAIL_USER, EMAIL_TO } = process.env;
-  const recipient = EMAIL_TO || EMAIL_USER;
+  const recipient = process.env.EMAIL_TO || 'safetyinfo@trademarkmasonry.ca';
 
   const parsedFields = typeof fields === 'string' ? JSON.parse(fields) : (fields || {});
 
@@ -69,10 +42,10 @@ async function sendSafetySubmission({ foremanName, project, submissionType, date
 <div style="max-width:580px;margin:0 auto;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.15)">
 
   <!-- Header -->
-  <div style="background:#111;padding:28px 24px;display:flex;align-items:center">
+  <div style="background:#111;padding:28px 24px">
     <div style="background:${accentColor};color:#000;font-weight:800;font-size:22px;
                 padding:6px 14px;border-radius:8px;display:inline-block;letter-spacing:-0.5px">TM</div>
-    <div style="margin-left:14px">
+    <div style="display:inline-block;margin-left:14px;vertical-align:middle">
       <div style="color:#fff;font-size:18px;font-weight:700">Trademark Masonry</div>
       <div style="color:#888;font-size:13px;margin-top:2px">Safety Management System</div>
     </div>
@@ -80,7 +53,7 @@ async function sendSafetySubmission({ foremanName, project, submissionType, date
 
   <!-- Type Badge -->
   <div style="background:${accentColor};padding:12px 24px">
-    <span style="font-weight:700;font-size:15px;color:${submissionType === 'Daily Tailgate' || submissionType === 'Site Photos Only' ? '#000' : '#fff'}">${submissionType.toUpperCase()}</span>
+    <span style="font-weight:700;font-size:15px;color:#000">${submissionType.toUpperCase()}</span>
   </div>
 
   <!-- Core Info -->
@@ -136,8 +109,7 @@ async function sendSafetySubmission({ foremanName, project, submissionType, date
   if (pdfBuffer) {
     attachments.push({
       filename: pdfName,
-      content: Buffer.from(pdfBuffer),
-      contentType: 'application/pdf'
+      content: Buffer.from(pdfBuffer).toString('base64'),
     });
   }
 
@@ -147,27 +119,31 @@ async function sendSafetySubmission({ foremanName, project, submissionType, date
     const safeName = pdfName.replace('.pdf', '') + `_photo${String(i + 1).padStart(2, '0')}.${ext}`;
     attachments.push({
       filename: safeName,
-      content: photo.buffer,
-      contentType: photo.mimetype || 'image/jpeg'
+      content: photo.buffer.toString('base64'),
     });
   }
 
-  const transporter = createTransport();
-
-  await transporter.sendMail({
-    from: `"Trademark Safety Forms" <${EMAIL_USER}>`,
-    to: recipient,
+  const resend = getResend();
+  const result = await resend.emails.send({
+    from: 'Trademark Safety <onboarding@resend.dev>',
+    to: [recipient],
     subject: `[Safety] ${submissionType} — ${project} — ${date}`,
     html,
     attachments
   });
 
+  if (result.error) {
+    throw new Error(result.error.message || 'Resend API error');
+  }
+
   return { recipient, filesAttached: attachments.length };
 }
 
 async function testConnection() {
-  const transporter = createTransport();
-  await transporter.verify();
+  if (!process.env.RESEND_API_KEY) {
+    throw new Error('RESEND_API_KEY not set');
+  }
+  // Resend doesn't need a connection test — API key validation happens on first send
 }
 
 module.exports = { sendSafetySubmission, testConnection };
