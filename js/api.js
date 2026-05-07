@@ -1,5 +1,5 @@
 // Backend URL — change this if you deploy the backend somewhere else
-const BACKEND_URL = 'https://trademark-safety-app-production.up.railway.app';
+const BACKEND_URL = 'https://trademark.up.railway.app';
 
 async function checkBackendHealth() {
   try {
