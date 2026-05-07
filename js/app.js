@@ -30,7 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('foremanName').addEventListener('input', e => { state.foremanName = e.target.value.trim(); });
   document.getElementById('foremanDate').addEventListener('input', e => { state.date = e.target.value; });
-  document.getElementById('workersOnSite').addEventListener('input', e => { state.workersOnSite = e.target.value; });
 });
 
 // ── Navigation ───────────────────────────────────────────────────────────────
@@ -1418,6 +1417,12 @@ function resetApp() {
   document.getElementById('projectSelect').innerHTML = '<option value="">Select project...</option>';
   document.getElementById('foremanName').value = '';
   document.getElementById('foremanDate').value = new Date().toISOString().split('T')[0];
+
+  // Re-enable nav buttons (disabled during submission)
+  const btnNext = document.getElementById('btnNext');
+  if (btnNext) { btnNext.disabled = false; btnNext.textContent = 'Next →'; }
+  const btnBack = document.getElementById('btnBack');
+  if (btnBack) { btnBack.disabled = false; }
 
   goToStep(1);
   showToast('Ready for next submission', 'success');
