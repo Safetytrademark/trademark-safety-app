@@ -90,24 +90,15 @@ app.listen(PORT, async () => {
   console.log(`║   Running on http://localhost:${PORT}       ║`);
   console.log('╚══════════════════════════════════════════╝\n');
 
-  const { EMAIL_USER, EMAIL_PASS, EMAIL_TO, EMAIL_SERVICE } = process.env;
+  const { RESEND_API_KEY, EMAIL_TO } = process.env;
 
-  if (!EMAIL_USER || EMAIL_USER === 'your-email@gmail.com') {
-    console.warn('⚠️  WARNING: Email not configured in .env');
+  if (!RESEND_API_KEY) {
+    console.warn('⚠️  WARNING: RESEND_API_KEY not configured in .env');
     console.warn('   See setup/SETUP.md for instructions.\n');
     return;
   }
 
-  console.log(`✓ Email service : ${EMAIL_SERVICE || 'smtp'}`);
-  console.log(`✓ Sending from  : ${EMAIL_USER}`);
-  console.log(`✓ Sending to    : ${EMAIL_TO || EMAIL_USER}`);
-  console.log('\nTesting email connection...');
-
-  try {
-    await testConnection();
-    console.log('✓ Email connection OK — ready to receive submissions!\n');
-  } catch (e) {
-    console.warn(`⚠️  Email connection failed: ${e.message}`);
-    console.warn('   Check EMAIL_USER and EMAIL_PASS in .env\n');
-  }
+  console.log(`✓ Email service : Resend API`);
+  console.log(`✓ Sending to    : ${EMAIL_TO || 'safetyinfo@trademarkmasonry.ca'}`);
+  console.log('✓ Ready to receive submissions!\n');
 });
