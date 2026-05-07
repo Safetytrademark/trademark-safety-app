@@ -1249,7 +1249,6 @@ function renderStep4() {
   document.getElementById('reviewDate').textContent = state.date;
   document.getElementById('reviewProject').textContent = state.project;
   document.getElementById('reviewType').textContent = `${typeInfo?.icon || ''} ${state.submissionType}`;
-  document.getElementById('reviewWorkers').textContent = state.workersOnSite || '—';
   document.getElementById('reviewPhotos').textContent = state.photos.length > 0 ? `${state.photos.length} photo(s)` : 'No photos';
   document.getElementById('reviewOneDrivePath').textContent = `Email → ${state.submissionType} — ${state.project} — ${state.date}`;
 
@@ -1412,7 +1411,6 @@ function resetApp() {
   state.submissionType = '';
   state.fields = {};
   state.photos = [];
-  state.workersOnSite = '';
   state.signature = null;
   window._signaturePad = null;
 
@@ -1420,7 +1418,6 @@ function resetApp() {
   document.getElementById('projectSelect').innerHTML = '<option value="">Select project...</option>';
   document.getElementById('foremanName').value = '';
   document.getElementById('foremanDate').value = new Date().toISOString().split('T')[0];
-  document.getElementById('workersOnSite').value = '';
 
   goToStep(1);
   showToast('Ready for next submission', 'success');
