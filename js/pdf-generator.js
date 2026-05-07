@@ -159,7 +159,7 @@ async function generatePDF(formData, photos) {
   // â”€â”€ Signature â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (formData.signature) {
     if (y > pageH - 50) { doc.addPage(); y = margin; }
-    y = renderSignaturePDF(doc, formData, y, margin, contentW, { NAVY, RED, LGRAY, DGRAY, MGRAY, BG });
+    y = renderSignaturePDF(doc, formData, y, margin, contentW, { NAVY, RED, WHITE, LGRAY, DGRAY, MGRAY, BG });
   }
 
   drawFooter(doc, formData, pageW, pageH, margin);
