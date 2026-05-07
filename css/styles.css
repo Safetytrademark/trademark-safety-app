@@ -98,7 +98,7 @@ body {
   font-feature-settings: "ss01", "cv11";
   line-height: 1.5;
   min-height: 100dvh;
-  padding-bottom: calc(200px + env(safe-area-inset-bottom));
+  padding-bottom: calc(320px + env(safe-area-inset-bottom));
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
