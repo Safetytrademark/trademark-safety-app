@@ -122,7 +122,7 @@ async function generatePDF(formData, photos) {
   doc.rect(margin, y, contentW, 18, 'F');
   doc.rect(margin, y, contentW, 18, 'S');
   const col3 = contentW / 3;
-  [['FOREMAN', formData.foremanName || 'â€”'], ['DATE', formData.date || 'â€”'], ['WORKERS ON SITE', formData.workersOnSite || 'â€”']].forEach(([lbl, val], i) => {
+  [['FOREMAN', formData.foremanName || '—'], ['DATE', formData.date || '—'], ['WORKERS ON SITE', formData.workersOnSite || '—']].forEach(([lbl, val], i) => {
     const x = margin + col3 * i + 4;
     doc.setFontSize(6); doc.setFont('helvetica','normal'); doc.setTextColor(...MGRAY);
     doc.text(lbl, x, y + 6);
@@ -132,7 +132,7 @@ async function generatePDF(formData, photos) {
   y += 19;
 
   // Row 2: Project (full width, wraps if needed)
-  const projectLines = doc.splitTextToSize(formData.project || 'â€”', contentW - 8);
+  const projectLines = doc.splitTextToSize(formData.project || '—', contentW - 8);
   const projectRowH = Math.max(14, projectLines.length * 5 + 6);
   doc.setFillColor(240, 243, 250);
   doc.rect(margin, y, contentW, projectRowH, 'F');
@@ -198,19 +198,16 @@ async function renderDailyTailgatePDF(doc, formData, y, pageW, pageH, margin, co
     y += 9;
 
     // Render all items with checkmarks
-    const allSections = { 'Permits': [], 'Work Surfaces': [], 'General Safety': [], 'Fall Protection': [] };
-    if (window.TAILGATE_ITEMS) {
-      Object.assign(allSections, TAILGATE_ITEMS);
-    }
+    const tailgateConfig = (typeof TAILGATE_ITEMS !== 'undefined' && TAILGATE_ITEMS)
+      ? TAILGATE_ITEMS
+      : { 'Permits': [], 'Work Surfaces': [], 'General Safety': [], 'Fall Protection': [] };
 
-    const sectionKeys = Object.keys(allSections).length > 0
-      ? Object.keys(allSections)
-      : ['Permits', 'Work Surfaces', 'General Safety', 'Fall Protection'];
+    const sectionKeys = Object.keys(tailgateConfig);
 
     // Collect all items by section from config
     const sectionData = sectionKeys.map(sec => ({
       title: sec,
-      items: (TAILGATE_ITEMS[sec] || []).map(item => ({ label: item, checked: !!items[item] }))
+      items: (tailgateConfig[sec] || []).map(item => ({ label: item, checked: !!items[item] }))
     }));
 
     // Render in 2 columns
@@ -293,7 +290,7 @@ async function renderDailyTailgatePDF(doc, formData, y, pageW, pageH, margin, co
         doc.setFontSize(7);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(...C.MGRAY);
-        const hazardText = 'Hazards: ' + row.hazards.join(' â€¢ ');
+        const hazardText = 'Hazards: ' + row.hazards.join(' • ');
         const lines = doc.splitTextToSize(hazardText, contentW - 4);
         doc.text(lines, margin + 2, y + 3);
         y += lines.length * 4.5 + 2;
@@ -344,7 +341,7 @@ async function renderDailyTailgatePDF(doc, formData, y, pageW, pageH, margin, co
       doc.setFontSize(7);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(255,255,255);
-      doc.text(ans || 'â€”', x + colW - 13, y + 4.8, { align: 'center' });
+      doc.text(ans || '—', x + colW - 13, y + 4.8, { align: 'center' });
     });
     y += 14;
   }
@@ -401,7 +398,7 @@ function renderGenericFieldsPDF(doc, formData, y, pageW, pageH, margin, contentW
 
     if (y > pageH - 40) { doc.addPage(); y = margin; }
 
-    const displayVal = Array.isArray(val) ? val.join(' â€¢ ') : String(val);
+    const displayVal = Array.isArray(val) ? val.join(' • ') : String(val);
     y = renderPDFSection(doc, field.label, displayVal, y, margin, contentW, C);
   });
 
@@ -420,7 +417,7 @@ function renderGenericFieldsPDF(doc, formData, y, pageW, pageH, margin, contentW
       doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(...C.DGRAY);
-      doc.text(`${m.name}  |  In: ${m.in || 'â€”'}  |  Out: ${m.out || 'â€”'}`, margin + 3, y + 4);
+      doc.text(`${m.name}  |  In: ${m.in || '—'}  |  Out: ${m.out || '—'}`, margin + 3, y + 4);
       y += 7;
     });
     y += 4;
@@ -548,7 +545,7 @@ function drawHeaderStrip(doc, formData, pageW, C) {
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...C.WHITE);
-  doc.text(`TRADEMARK MASONRY â€” ${(formData.submissionType || '').toUpperCase()} â€” ${formData.project || ''}`, 8, 6.5);
+  doc.text(`TRADEMARK MASONRY — ${(formData.submissionType || '').toUpperCase()} — ${formData.project || ''}`, 8, 6.5);
 }
 
 // â”€â”€ Footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -562,7 +559,7 @@ function drawFooter(doc, formData, pageW, pageH, margin) {
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(180, 180, 180);
     const ts = new Date().toLocaleString('en-CA', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
-    doc.text(`${formData.submissionType} â€” ${formData.project}`, margin, pageH - 4);
+    doc.text(`${formData.submissionType} — ${formData.project}`, margin, pageH - 4);
     doc.text(`Page ${i} of ${pages}  |  ${ts}`, pageW - margin, pageH - 4, { align: 'right' });
   }
 }
@@ -633,32 +630,10 @@ async function generateTimesheetPDF(formData) {
   const BG    = [248, 248, 248];
   const GREEN = [16, 185, 129];
 
-  // â”€â”€ Header bar â”€â”€
-  doc.setFillColor(...NAVY);
-  doc.rect(0, 0, pageW, 28, 'F');
-  doc.setFillColor(...RED);
-  doc.rect(0, 0, 4, 28, 'F');
-
-  doc.setFillColor(...WHITE);
-  doc.roundedRect(8, 5, 15, 11, 1.5, 1.5, 'F');
-  doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(...NAVY);
-  doc.text('TM', 15.5, 12, { align: 'center' });
-
-  doc.setFontSize(14); doc.setFont('helvetica','bold'); doc.setTextColor(...WHITE);
-  doc.text('TRADEMARK MASONRY', 27, 11);
-  doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(...LGRAY);
-  doc.text('Weekly Timesheet', 27, 17);
-
-  // Title badge
-  doc.setFillColor(...RED);
-  doc.roundedRect(pageW - margin - 48, 7, 48, 10, 2, 2, 'F');
-  doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(...WHITE);
-  doc.text('WEEKLY TIMESHEET', pageW - margin - 24, 13.5, { align: 'center' });
-
-  let y = 34;
+  let y = drawPDFHeader(doc, pageW, 'Weekly Timesheet', 'Weekly Timesheet');
 
   // â”€â”€ Info row â”€â”€
-  const proj = formData.project || 'â€”';
+  const proj = formData.project || '—';
   const projParts = proj.match(/^(\w+)\s*-\s*(.+?)\s*-\s*(.+)$/);
   const projNum  = projParts ? projParts[1] : proj;
   const projName = projParts ? projParts[3] : '';
@@ -666,9 +641,9 @@ async function generateTimesheetPDF(formData) {
   const infoItems = [
     ['PROJECT #', projNum],
     ['PROJECT NAME', projName || proj],
-    ['WEEK ENDING', formData.fields.week_ending || 'â€”'],
-    ['FOREMAN', formData.foremanName || 'â€”'],
-    ['JOB / LOCATION', formData.fields.location || 'â€”']
+    ['WEEK ENDING', formData.fields.week_ending || '—'],
+    ['FOREMAN', formData.foremanName || '—'],
+    ['JOB / LOCATION', formData.fields.location || '—']
   ];
 
   const infoColW = contentW / infoItems.length;
@@ -775,10 +750,10 @@ async function generateTimesheetPDF(formData) {
 
       doc.setFontSize(8); doc.setFont('helvetica','normal');
       if (reg > 0) { doc.setTextColor(...DGRAY); doc.text(String(reg % 1 === 0 ? reg : reg.toFixed(1)), dx + regW * 0.5, y + 5.5, { align: 'center' }); }
-      else { doc.setTextColor(...LGRAY); doc.text('â€”', dx + regW * 0.5, y + 5.5, { align: 'center' }); }
+      else { doc.setTextColor(...LGRAY); doc.text('—', dx + regW * 0.5, y + 5.5, { align: 'center' }); }
 
       if (ot > 0) { doc.setTextColor([196,30,58]); doc.text(String(ot % 1 === 0 ? ot : ot.toFixed(1)), dx + regW * 1.5, y + 5.5, { align: 'center' }); }
-      else { doc.setTextColor(...LGRAY); doc.text('â€”', dx + regW * 1.5, y + 5.5, { align: 'center' }); }
+      else { doc.setTextColor(...LGRAY); doc.text('—', dx + regW * 1.5, y + 5.5, { align: 'center' }); }
     });
 
     // Totals
@@ -840,7 +815,7 @@ async function generateTimesheetPDF(formData) {
   const nameVal = formData.fields.supervisor_name || formData.foremanName || '';
   doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(...DGRAY);
   doc.text('Printed Name: ' + nameVal, margin + 2, y + 4);
-  doc.text('Date: ' + (formData.fields.week_ending || formData.date || 'â€”'), margin + contentW / 2, y + 4);
+  doc.text('Date: ' + (formData.fields.week_ending || formData.date || '—'), margin + contentW / 2, y + 4);
   y += 10;
 
   // Signature image
@@ -861,7 +836,7 @@ async function generateTimesheetPDF(formData) {
     doc.rect(0, pageH - 8, pageW, 8, 'F');
     doc.setFontSize(6); doc.setFont('helvetica','normal'); doc.setTextColor(180,180,180);
     const ts = new Date().toLocaleString('en-CA', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
-    doc.text(`Weekly Timesheet â€” ${formData.project}`, margin, pageH - 3);
+    doc.text(`Weekly Timesheet — ${formData.project}`, margin, pageH - 3);
     doc.text(`Page ${i} of ${pages}  |  ${ts}`, pageW - margin, pageH - 3, { align: 'right' });
   }
 
@@ -890,28 +865,10 @@ async function generateProductionPDF(formData, photos) {
   const BG    = [248, 248, 248];
   const GREEN = [16, 185, 129];
 
-  // â”€â”€ Header â”€â”€
-  doc.setFillColor(...NAVY);
-  doc.rect(0, 0, pageW, 28, 'F');
-  doc.setFillColor(...RED);
-  doc.rect(0, 0, 4, 28, 'F');
-  doc.setFillColor(...WHITE);
-  doc.roundedRect(8, 5, 15, 11, 1.5, 1.5, 'F');
-  doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(...NAVY);
-  doc.text('TM', 15.5, 12, { align: 'center' });
-  doc.setFontSize(14); doc.setFont('helvetica','bold'); doc.setTextColor(...WHITE);
-  doc.text('TRADEMARK MASONRY', 27, 11);
-  doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(...LGRAY);
-  doc.text('CMU Block Wall â€” Weekly Production Report', 27, 17);
-  doc.setFillColor(...RED);
-  doc.roundedRect(pageW - margin - 52, 7, 52, 10, 2, 2, 'F');
-  doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.setTextColor(...WHITE);
-  doc.text('PRODUCTION REPORT', pageW - margin - 26, 13.5, { align: 'center' });
-
-  let y = 34;
+  let y = drawPDFHeader(doc, pageW, 'Production Report', 'CMU Block Wall — Weekly Production Report');
 
   // â”€â”€ Info bar â”€â”€
-  const proj = formData.project || 'â€”';
+  const proj = formData.project || '—';
   const projParts = proj.match(/^(\w+)\s*-\s*(.+?)\s*-\s*(.+)$/);
   const projNum  = projParts ? projParts[1] : proj;
   const projName = projParts ? projParts[3] : proj;
@@ -919,10 +876,10 @@ async function generateProductionPDF(formData, photos) {
   const infoItems = [
     ['PROJECT #', projNum],
     ['PROJECT NAME', projName],
-    ['WEEK OF', formData.fields.week_of || 'â€”'],
-    ['FOREMAN', formData.foremanName || 'â€”'],
-    ['GC', formData.fields.gc || 'â€”'],
-    ['LOCATION / AREA', formData.fields.location || 'â€”']
+    ['WEEK OF', formData.fields.week_of || '—'],
+    ['FOREMAN', formData.foremanName || '—'],
+    ['GC', formData.fields.gc || '—'],
+    ['LOCATION / AREA', formData.fields.location || '—']
   ];
   const infoColW = contentW / infoItems.length;
   doc.setFillColor(...BG); doc.setDrawColor(...LGRAY); doc.setLineWidth(0.2);
@@ -941,7 +898,7 @@ async function generateProductionPDF(formData, photos) {
   doc.setFillColor(...NAVY);
   doc.rect(margin, y, contentW, 7, 'F');
   doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(...WHITE);
-  doc.text('BLOCK PLACEMENT â€” Enter number of blocks placed per type per day', margin + 3, y + 5);
+  doc.text('BLOCK PLACEMENT — Enter number of blocks placed per type per day', margin + 3, y + 5);
   y += 7;
 
   // Column widths
@@ -998,7 +955,7 @@ async function generateProductionPDF(formData, photos) {
       doc.setFont('helvetica', val > 0 ? 'bold' : 'normal');
       doc.setTextColor(val > 0 ? NAVY[0] : LGRAY[0], val > 0 ? NAVY[1] : LGRAY[1], val > 0 ? NAVY[2] : LGRAY[2]);
       doc.setFontSize(val > 0 ? 9 : 7);
-      doc.text(val > 0 ? String(val) : 'â€”', dx + dayW / 2, y + 5.5, { align: 'center' });
+      doc.text(val > 0 ? String(val) : '—', dx + dayW / 2, y + 5.5, { align: 'center' });
     });
 
     const totX = margin + typeW + dayW * 7;
@@ -1007,7 +964,7 @@ async function generateProductionPDF(formData, photos) {
     doc.rect(totX, y, wkTotW, rowH, 'F');
     doc.setFontSize(8.5); doc.setFont('helvetica','bold');
     doc.setTextColor(...(weekTotal > 0 ? NAVY : LGRAY));
-    doc.text(weekTotal > 0 ? String(weekTotal) : 'â€”', totX + wkTotW / 2, y + 5.5, { align: 'center' });
+    doc.text(weekTotal > 0 ? String(weekTotal) : '—', totX + wkTotW / 2, y + 5.5, { align: 'center' });
 
     y += rowH;
   });
@@ -1019,17 +976,17 @@ async function generateProductionPDF(formData, photos) {
   doc.text('DAILY TOTAL', margin + 2, y + 5.5);
   PROD_DAYS_PDF.forEach((d, i) => {
     const dx = margin + typeW + dayW * i;
-    doc.text(dailyTotals[d] > 0 ? String(dailyTotals[d]) : 'â€”', dx + dayW / 2, y + 5.5, { align: 'center' });
+    doc.text(dailyTotals[d] > 0 ? String(dailyTotals[d]) : '—', dx + dayW / 2, y + 5.5, { align: 'center' });
   });
   const totX2 = margin + typeW + dayW * 7;
-  doc.text(grandTotal > 0 ? String(grandTotal) : 'â€”', totX2 + wkTotW / 2, y + 5.5, { align: 'center' });
+  doc.text(grandTotal > 0 ? String(grandTotal) : '—', totX2 + wkTotW / 2, y + 5.5, { align: 'center' });
   y += 12;
 
   // â”€â”€ Crew Table â”€â”€
   doc.setFillColor(...NAVY);
   doc.rect(margin, y, contentW, 7, 'F');
   doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(...WHITE);
-  doc.text('CREW â€” Number of workers on site each day', margin + 3, y + 5);
+  doc.text('CREW — Number of workers on site each day', margin + 3, y + 5);
   y += 7;
 
   const crew = prod.crew || {};
@@ -1047,7 +1004,7 @@ async function generateProductionPDF(formData, photos) {
       doc.setDrawColor(...LGRAY); doc.line(dx, y, dx, y + rowH);
       doc.setFontSize(val > 0 ? 9 : 7); doc.setFont('helvetica', val > 0 ? 'bold' : 'normal');
       doc.setTextColor(val > 0 ? DGRAY[0] : LGRAY[0], val > 0 ? DGRAY[1] : LGRAY[1], val > 0 ? DGRAY[2] : LGRAY[2]);
-      doc.text(val > 0 ? String(val) : 'â€”', dx + dayW / 2, y + 5.5, { align: 'center' });
+      doc.text(val > 0 ? String(val) : '—', dx + dayW / 2, y + 5.5, { align: 'center' });
     });
     y += rowH;
   });
@@ -1078,7 +1035,7 @@ async function generateProductionPDF(formData, photos) {
   const nameVal = formData.fields.supervisor_name || formData.foremanName || '';
   doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(...DGRAY);
   doc.text('Printed Name: ' + nameVal, margin + 2, y + 4);
-  doc.text('Date: ' + (formData.fields.week_of || formData.date || 'â€”'), margin + contentW / 2, y + 4);
+  doc.text('Date: ' + (formData.fields.week_of || formData.date || '—'), margin + contentW / 2, y + 4);
   y += 10;
   const sigW = 70; const sigH = 22;
   doc.setFillColor(255,255,255); doc.setDrawColor(...LGRAY); doc.setLineWidth(0.3);
@@ -1112,7 +1069,7 @@ async function generateProductionPDF(formData, photos) {
     doc.setFillColor(...NAVY); doc.rect(0, pageH - 8, pageW, 8, 'F');
     doc.setFontSize(6); doc.setFont('helvetica','normal'); doc.setTextColor(180,180,180);
     const ts = new Date().toLocaleString('en-CA', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
-    doc.text(`Production Report â€” ${formData.project}`, margin, pageH - 3);
+    doc.text(`Production Report — ${formData.project}`, margin, pageH - 3);
     doc.text(`Page ${i} of ${pages}  |  ${ts}`, pageW - margin, pageH - 3, { align: 'right' });
   }
 
@@ -1145,16 +1102,16 @@ async function generateInspectionPDF(formData, photos) {
   let y = drawPDFHeader(doc, pageW, formData.submissionType, config.subtitle);
 
   // â”€â”€ Info bar â”€â”€
-  const infoFields = [['PROJECT', formData.project || 'â€”'], ['FOREMAN', formData.foremanName || 'â€”'], ['WEEK STARTING', formData.fields.week_starting || 'â€”']];
+  const infoFields = [['PROJECT', formData.project || '—'], ['FOREMAN', formData.foremanName || '—'], ['WEEK STARTING', formData.fields.week_starting || '—']];
   // Type-specific extra info
   if (formData.submissionType === 'E-Pallet Jack Inspection') {
-    infoFields.push(['MACHINE / UNIT #', formData.fields.machine_unit || 'â€”']);
+    infoFields.push(['MACHINE / UNIT #', formData.fields.machine_unit || '—']);
   } else if (formData.submissionType === 'Forklift Inspection') {
-    infoFields.push(['MACHINE / UNIT #', formData.fields.machine_unit || 'â€”']);
-    infoFields.push(['OPERATOR', formData.fields.operator || 'â€”']);
+    infoFields.push(['MACHINE / UNIT #', formData.fields.machine_unit || '—']);
+    infoFields.push(['OPERATOR', formData.fields.operator || '—']);
   } else if (formData.submissionType === 'Scaffolding Inspection') {
-    infoFields.push(['SCAFFOLD LOCATION', formData.fields.scaffold_location || 'â€”']);
-    infoFields.push(['INSPECTOR', formData.fields.inspector || 'â€”']);
+    infoFields.push(['SCAFFOLD LOCATION', formData.fields.scaffold_location || '—']);
+    infoFields.push(['INSPECTOR', formData.fields.inspector || '—']);
   }
 
   const iColW = contentW / infoFields.length;
@@ -1201,7 +1158,7 @@ async function generateInspectionPDF(formData, photos) {
       doc.setFillColor(...RED);
       doc.rect(0, 0, 4, 10, 'F');
       doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(...WHITE);
-      doc.text(`TRADEMARK MASONRY â€” ${formData.submissionType.toUpperCase()} â€” ${formData.project}`, 8, 6.5);
+      doc.text(`TRADEMARK MASONRY — ${formData.submissionType.toUpperCase()} — ${formData.project}`, 8, 6.5);
       y = 15;
     }
   };
@@ -1359,7 +1316,7 @@ async function generateInspectionPDF(formData, photos) {
   const nameVal = formData.fields.supervisor_name || formData.foremanName || '';
   doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(...DGRAY);
   doc.text('Printed Name: ' + nameVal, margin + 2, y + 4);
-  doc.text('Date: ' + (formData.fields.week_starting || formData.date || 'â€”'), margin + contentW * 0.55, y + 4);
+  doc.text('Date: ' + (formData.fields.week_starting || formData.date || '—'), margin + contentW * 0.55, y + 4);
   y += 10;
 
   const sigW = Math.min(contentW * 0.5, 80); const sigH = sigW * 0.4;
@@ -1386,14 +1343,14 @@ async function generateInspectionPDF(formData, photos) {
     doc.rect(0, pageH - 10, pageW, 10, 'F');
     doc.setFontSize(6); doc.setFont('helvetica','normal'); doc.setTextColor(180,180,180);
     const ts = new Date().toLocaleString('en-CA', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
-    doc.text(`${formData.submissionType} â€” ${formData.project}`, margin, pageH - 4);
+    doc.text(`${formData.submissionType} — ${formData.project}`, margin, pageH - 4);
     doc.text(`Page ${i} of ${pages}  |  ${ts}`, pageW - margin, pageH - 4, { align: 'right' });
   }
 
   return doc.output('arraybuffer');
 }
 
-// â”€â”€ Daily Inspection PDF (Telehandler / Forklift â€” portrait, single check) â”€â”€â”€â”€
+// â”€â”€ Daily Inspection PDF (Telehandler / Forklift — portrait, single check) â”€â”€â”€â”€
 async function generateDailyInspectionPDF(formData, photos) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
@@ -1420,16 +1377,16 @@ async function generateDailyInspectionPDF(formData, photos) {
 
   // â”€â”€ Info bar (type-aware) â”€â”€
   const infoFields = [
-    ['PROJECT', formData.project || 'â€”'],
-    ['FOREMAN', formData.foremanName || 'â€”'],
-    ['DATE',    formData.date || 'â€”']
+    ['PROJECT', formData.project || '—'],
+    ['FOREMAN', formData.foremanName || '—'],
+    ['DATE',    formData.date || '—']
   ];
   if (formData.submissionType === 'Scaffolding Inspection') {
-    infoFields.push(['SCAFFOLD LOCATION', formData.fields.scaffold_location || 'â€”']);
-    infoFields.push(['INSPECTOR',         formData.fields.inspector        || 'â€”']);
+    infoFields.push(['SCAFFOLD LOCATION', formData.fields.scaffold_location || '—']);
+    infoFields.push(['INSPECTOR',         formData.fields.inspector        || '—']);
   } else {
-    infoFields.push(['MACHINE / UNIT #',  formData.fields.machine_unit || 'â€”']);
-    infoFields.push(['OPERATOR',          formData.fields.operator     || 'â€”']);
+    infoFields.push(['MACHINE / UNIT #',  formData.fields.machine_unit || '—']);
+    infoFields.push(['OPERATOR',          formData.fields.operator     || '—']);
   }
   const iColW = contentW / infoFields.length;
   doc.setFillColor(...BG); doc.setDrawColor(...LGRAY); doc.setLineWidth(0.2);
@@ -1611,7 +1568,7 @@ async function generateDailyInspectionPDF(formData, photos) {
   const nameVal = formData.fields.supervisor_name || formData.foremanName || '';
   doc.setFontSize(8.5); doc.setFont('helvetica','normal'); doc.setTextColor(...DGRAY);
   doc.text('Printed Name: ' + nameVal, margin + 2, y + 5);
-  doc.text('Date: ' + (formData.date || 'â€”'), margin + contentW * 0.55, y + 5);
+  doc.text('Date: ' + (formData.date || '—'), margin + contentW * 0.55, y + 5);
   y += 12;
 
   const sigW = Math.min(contentW * 0.5, 80); const sigH = sigW * 0.4;
@@ -1638,7 +1595,7 @@ async function generateDailyInspectionPDF(formData, photos) {
     doc.rect(0, pageH - 10, pageW, 10, 'F');
     doc.setFontSize(6); doc.setFont('helvetica','normal'); doc.setTextColor(180,180,180);
     const ts = new Date().toLocaleString('en-CA', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
-    doc.text(`${formData.submissionType} â€” ${formData.project}`, margin, pageH - 4);
+    doc.text(`${formData.submissionType} — ${formData.project}`, margin, pageH - 4);
     doc.text(`Page ${i} of ${pages}  |  ${ts}`, pageW - margin, pageH - 4, { align: 'right' });
   }
 
@@ -1672,16 +1629,16 @@ async function generateQAQCPDF(formData, photos) {
 
   // â”€â”€ Project info grid (2 columns) â”€â”€
   const infoLeft = [
-    ['PROJECT', formData.project || 'â€”'],
-    ['PROJECT #', f.project_number || 'â€”'],
-    ['DATE', formData.date || 'â€”'],
-    ['GENERAL CONTRACTOR', f.gc || 'â€”']
+    ['PROJECT', formData.project || '—'],
+    ['PROJECT #', f.project_number || '—'],
+    ['DATE', formData.date || '—'],
+    ['GENERAL CONTRACTOR', f.gc || '—']
   ];
   const infoRight = [
-    ['FOREMAN', formData.foremanName || 'â€”'],
-    ['LOCATION / AREA', f.location_area || 'â€”'],
-    ['FLOOR / ROOM', f.floor_room || 'â€”'],
-    ['DRAWING REF #', f.drawing_ref || 'â€”']
+    ['FOREMAN', formData.foremanName || '—'],
+    ['LOCATION / AREA', f.location_area || '—'],
+    ['FLOOR / ROOM', f.floor_room || '—'],
+    ['DRAWING REF #', f.drawing_ref || '—']
   ];
 
   const colW = contentW / 2 - 2;
@@ -1746,7 +1703,7 @@ async function generateQAQCPDF(formData, photos) {
       doc.setFillColor(...NAVY); doc.rect(0, 0, pageW, 9, 'F');
       doc.setFillColor(...RED);  doc.rect(0, 0, 4, 9, 'F');
       doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.setTextColor(...WHITE);
-      doc.text(`TRADEMARK MASONRY â€” QAQC FOREMAN â€” ${formData.project}`, 8, 6);
+      doc.text(`TRADEMARK MASONRY — QAQC FOREMAN — ${formData.project}`, 8, 6);
       y = 14;
     }
   };
@@ -1862,17 +1819,17 @@ async function generateQAQCPDF(formData, photos) {
     y += 15;
   }
 
-  // â”€â”€ Sign-off â€” Masonry Contractor â”€â”€
+  // â”€â”€ Sign-off — Masonry Contractor â”€â”€
   checkNewPage(48);
   doc.setFillColor(...NAVY); doc.rect(margin, y, contentW, 7, 'F');
   doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(...WHITE);
-  doc.text('MASONRY CONTRACTOR â€” Inspector / Foreman', margin + 3, y + 5);
+  doc.text('MASONRY CONTRACTOR — Inspector / Foreman', margin + 3, y + 5);
   y += 9;
 
   const nameVal = f.supervisor_name || formData.foremanName || '';
   doc.setFontSize(8.5); doc.setFont('helvetica','normal'); doc.setTextColor(...DGRAY);
   doc.text('Printed Name: ' + nameVal, margin + 2, y + 5);
-  doc.text('Date: ' + (formData.date || 'â€”'), margin + contentW * 0.6, y + 5);
+  doc.text('Date: ' + (formData.date || '—'), margin + contentW * 0.6, y + 5);
   y += 10;
 
   const sigW = Math.min(contentW * 0.48, 75); const sigH = sigW * 0.38;
@@ -1884,11 +1841,11 @@ async function generateQAQCPDF(formData, photos) {
   doc.setFontSize(6.5); doc.setTextColor(...MGRAY); doc.text('Signature', margin, y + sigH + 4);
   y += sigH + 12;
 
-  // â”€â”€ Sign-off â€” GC â”€â”€
+  // â”€â”€ Sign-off — GC â”€â”€
   checkNewPage(48);
   doc.setFillColor(60, 80, 60); doc.rect(margin, y, contentW, 7, 'F');
   doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(...WHITE);
-  doc.text('GENERAL CONTRACTOR â€” Site Representative (Acceptance Signature)', margin + 3, y + 5);
+  doc.text('GENERAL CONTRACTOR — Site Representative (Acceptance Signature)', margin + 3, y + 5);
   y += 9;
 
   const gcName = f.gc_name || '___________________________________';
@@ -1897,11 +1854,11 @@ async function generateQAQCPDF(formData, photos) {
   doc.text('Date: _______________', margin + contentW * 0.6, y + 5);
   y += 10;
 
-  // GC signature box (blank â€” signed on paper)
+  // GC signature box (blank — signed on paper)
   doc.setFillColor(255,255,255); doc.setDrawColor(...LGRAY); doc.setLineWidth(0.3);
   doc.rect(margin, y, sigW, sigH, 'FD');
   doc.setFontSize(7); doc.setFont('helvetica','italic'); doc.setTextColor(...MGRAY);
-  doc.text('GC signature â€” signed on paper', margin + sigW / 2, y + sigH / 2 + 2, { align: 'center' });
+  doc.text('GC signature — signed on paper', margin + sigW / 2, y + sigH / 2 + 2, { align: 'center' });
   doc.setFontSize(6.5); doc.text('Signature', margin, y + sigH + 4);
   y += sigH + 10;
 
@@ -1918,7 +1875,7 @@ async function generateQAQCPDF(formData, photos) {
     doc.setFillColor(...NAVY); doc.rect(0, pageH - 10, pageW, 10, 'F');
     doc.setFontSize(6); doc.setFont('helvetica','normal'); doc.setTextColor(180,180,180);
     const ts = new Date().toLocaleString('en-CA', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
-    doc.text(`QAQC Foreman â€” ${formData.project}`, margin, pageH - 4);
+    doc.text(`QAQC Foreman — ${formData.project}`, margin, pageH - 4);
     doc.text(`Page ${i} of ${pages}  |  ${ts}`, pageW - margin, pageH - 4, { align: 'right' });
   }
 
