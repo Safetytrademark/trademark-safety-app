@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Trademark Safety Forms</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Header -->
+  <header class="app-header">
+    <img
+      class="header-logo"
+      src="assets/TradeMarkMas-Colour-RGB-Lrg.png"
+      alt="Trademark Masonry"
+      onerror="this.style.display='none'; document.querySelector('.logo-badge').classList.add('visible')"
+    >
+    <div class="logo-badge" aria-hidden="true">TM</div>
+
+    <div class="header-right">
+      <div class="header-subtitle">Safety System</div>
+      <div class="status-row">
+        <div class="status-dot" id="backendStatus" title="Checking server..."></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Progress -->
+  <div class="progress-wrap">
+    <div class="progress-track"><div id="progressFill"></div></div>
+    <div class="step-dots">
+      <div class="step-dot active" id="stepDot1">
+        <div class="step-dot-circle">1</div>
+        <span class="step-dot-label">Info</span>
+      </div>
+      <div class="step-dot" id="stepDot2">
+        <div class="step-dot-circle">2</div>
+        <span class="step-dot-label">Project</span>
+      </div>
+      <div class="step-dot" id="stepDot3">
+        <div class="step-dot-circle">3</div>
+        <span class="step-dot-label">Form</span>
+      </div>
+      <div class="step-dot" id="stepDot4">
+        <div class="step-dot-circle">4</div>
+        <span class="step-dot-label">Review</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STEP 1: Foreman Info ───────────────────────────────────────────────── -->
+  <section class="step-panel active" id="step1">
+    <h2 class="step-heading">Who's submitting?</h2>
+    <p class="step-sub">Fill in your info to get started.</p>
+
+    <div class="field-group">
+      <label class="field-label" for="foremanName">Your Name *</label>
+      <input class="field-input" type="text" id="foremanName"
+        placeholder="e.g., John Silva"
+        autocomplete="name"
+        inputmode="text">
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="foremanDate">Date *</label>
+      <input class="field-input" type="date" id="foremanDate">
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="workersOnSite">Workers on Site</label>
+      <input class="field-input" type="number" id="workersOnSite"
+        placeholder="e.g., 12"
+        inputmode="numeric"
+        min="0" max="500">
+    </div>
+  </section>
+
+  <!-- ── STEP 2: Project & Type ─────────────────────────────────────────────── -->
+  <section class="step-panel" id="step2">
+    <h2 class="step-heading">Select Project</h2>
+    <p class="step-sub">Choose your jobsite and what you're submitting.</p>
+
+    <div class="field-group">
+      <label class="field-label" for="projectSelect">Jobsite / Project *</label>
+      <select class="field-input field-select" id="projectSelect">
+        <option value="">Select project...</option>
+      </select>
+    </div>
+
+    <div class="field-group mt-4">
+      <label class="field-label">Submission Type *</label>
+      <div id="typeGrid"></div>
+    </div>
+  </section>
+
+  <!-- ── STEP 3: Dynamic Form + Photos ─────────────────────────────────────── -->
+  <section class="step-panel" id="step3">
+    <h2 class="step-heading" id="formTypeTitle">Form</h2>
+    <p class="step-sub">Fill in the details below. Photos are optional unless noted.</p>
+
+    <div id="dynamicFields"></div>
+
+    <!-- Photo Upload -->
+    <div class="photo-section">
+      <div class="photo-section-title">📷 Photos</div>
+
+      <div class="photo-drop-zone" id="photoZone">
+        <div class="photo-drop-icon">📸</div>
+        <div class="photo-drop-text">Tap to add photos</div>
+        <div class="photo-drop-hint">Up to 15 photos · JPG, PNG, HEIC</div>
+        <input type="file" id="photoInput" accept="image/*" multiple
+          style="display:none" capture="environment">
+      </div>
+
+      <div class="photo-count" id="photoCount"></div>
+      <div class="photo-preview-grid" id="photoPreview"></div>
+    </div>
+  </section>
+
+  <!-- ── STEP 4: Review & Submit ────────────────────────────────────────────── -->
+  <section class="step-panel" id="step4">
+    <h2 class="step-heading">Review & Submit</h2>
+    <p class="step-sub">Check everything looks right before submitting.</p>
+
+    <!-- Summary card -->
+    <div class="review-card">
+      <div class="review-card-header">Submission Summary</div>
+      <div class="review-grid">
+        <div class="review-cell">
+          <div class="review-cell-label">Foreman</div>
+          <div class="review-cell-value" id="reviewForeman">—</div>
+        </div>
+        <div class="review-cell">
+          <div class="review-cell-label">Date</div>
+          <div class="review-cell-value" id="reviewDate">—</div>
+        </div>
+        <div class="review-cell">
+          <div class="review-cell-label">Type</div>
+          <div class="review-cell-value" id="reviewType">—</div>
+        </div>
+        <div class="review-cell">
+          <div class="review-cell-label">Workers</div>
+          <div class="review-cell-value" id="reviewWorkers">—</div>
+        </div>
+      </div>
+      <div style="padding: 12px 16px; border-top: 1px solid var(--border);">
+        <div class="review-cell-label">Project</div>
+        <div class="review-cell-value" style="margin-top:3px; font-size:13px;" id="reviewProject">—</div>
+      </div>
+      <div style="padding: 12px 16px; border-top: 1px solid var(--border);">
+        <div class="review-cell-label">Photos</div>
+        <div class="review-cell-value" style="margin-top:3px;" id="reviewPhotos">—</div>
+      </div>
+    </div>
+
+    <!-- Field Summary -->
+    <div class="review-card">
+      <div class="review-card-header">Form Details</div>
+      <div id="reviewFieldSummary"></div>
+    </div>
+
+    <!-- OneDrive path -->
+    <div style="margin-bottom: 16px;">
+      <div class="field-label" style="margin-bottom:6px;">📁 Will be saved to</div>
+      <div class="path-badge" id="reviewOneDrivePath">—</div>
+    </div>
+  </section>
+
+</div><!-- /.app -->
+
+<!-- Toast notifications -->
+<div class="toast" id="errorToast" role="alert" aria-live="polite"></div>
+
+<!-- Fixed Nav -->
+<div class="nav-bar">
+  <button class="btn btn-back" id="btnBack" style="visibility:hidden">← Back</button>
+  <button class="btn btn-next" id="btnNext">Next →</button>
+</div>
+
+<!-- Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.7.1/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+
+<!-- App scripts (order matters) -->
+<script src="js/logo.js"></script>
+<script src="js/form-configs.js"></script>
+<script src="js/pdf-generator.js"></script>
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
