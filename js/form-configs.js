@@ -203,6 +203,72 @@ const DEFAULT_FLRA_TASKS = [
     hazards: ['Working with Power Tools', 'Exposure to Dust'],
     riskLevel: 'Low',
     controls: 'Dust collection tool attached, safety glasses, hearing protection'
+  },
+  {
+    task: 'Operating forklift / Material handling',
+    hazards: ['Operating Equipment', 'Equipment Blind Spots', 'Pinch Points'],
+    riskLevel: 'Medium',
+    controls: 'Be aware of surroundings, honk around corners, drive at safe speed, spotter when needed'
+  },
+  {
+    task: 'Housekeeping / Cleanup',
+    hazards: ['Exposure to Dust', 'Slips / Trips Possible'],
+    riskLevel: 'Low',
+    controls: 'No dry sweeping, use dust pan, wear respirator/dust mask, keep walkways clear'
+  },
+  {
+    task: 'Loading / Unloading materials',
+    hazards: ['Pinch Points', 'Operating Equipment', 'Working with Hand Tools'],
+    riskLevel: 'Medium',
+    controls: 'Proper lifting techniques, team lift for heavy items, gloves, steel toe boots'
+  },
+  {
+    task: 'Setting up / Dismantling scaffold',
+    hazards: ['Use of Scaffolds', 'Fall from Heights', 'Pinch Points'],
+    riskLevel: 'Medium',
+    controls: 'Inspect scaffold tags, fall protection above 10ft, hard hat, secure all components'
+  },
+  {
+    task: 'Working on scaffold',
+    hazards: ['Use of Scaffolds', 'Fall from Heights', 'Others Working Above / Below'],
+    riskLevel: 'Medium',
+    controls: 'Inspect scaffold daily, guardrails in place, no overloading, fall arrest if required'
+  },
+  {
+    task: 'Grouting walls',
+    hazards: ['Working with Hand Tools', 'Exposure to Dust', 'Slips / Trips Possible'],
+    riskLevel: 'Low',
+    controls: 'Safety glasses, gloves, keep work area clean, proper lifting technique'
+  },
+  {
+    task: 'Installing / Tying rebar',
+    hazards: ['Working with Hand Tools', 'Pinch Points', 'Impalement'],
+    riskLevel: 'Medium',
+    controls: 'Rebar caps on exposed ends, gloves, safety glasses, watch hand placement'
+  },
+  {
+    task: 'Tuck pointing / Repointing',
+    hazards: ['Working with Hand Tools', 'Exposure to Dust', 'Working at Heights'],
+    riskLevel: 'Low',
+    controls: 'Dust mask, safety glasses, scaffold inspection, fall protection if at heights'
+  },
+  {
+    task: 'Mortar / Block delivery to work area',
+    hazards: ['Pinch Points', 'Slips / Trips Possible', 'Working with Hand Tools'],
+    riskLevel: 'Low',
+    controls: 'Keep paths clear, proper lifting, communicate with crew, gloves'
+  },
+  {
+    task: 'Sandblasting / Surface preparation',
+    hazards: ['Exposure to Dust', 'Working with Power Tools', 'Noise Exposure'],
+    riskLevel: 'Medium',
+    controls: 'Respirator, hearing protection, full PPE, containment if required'
+  },
+  {
+    task: 'Power washing',
+    hazards: ['Working with Power Tools', 'Slips / Trips Possible'],
+    riskLevel: 'Low',
+    controls: 'Safety glasses, waterproof boots, never point at people, GFCI protection'
   }
 ];
 
@@ -220,6 +286,10 @@ const FLRA_HAZARDS = [
   'Weather Conditions',
   'Pinch Points',
   'Working in Tight Spaces',
+  'Equipment Blind Spots',
+  'Noise Exposure',
+  'Impalement',
+  'Working at Heights',
   'Other'
 ];
 
