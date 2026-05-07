@@ -1464,7 +1464,7 @@ async function generateDailyInspectionPDF(formData, photos) {
     if (y + needed > pageH - 18) {
       doc.addPage();
       y = margin;
-      y = drawContinuationHeader(doc, pageW, ``TRADEMARK MASONRY â€” ${formData.submissionType.toUpperCase()} â€” ${formData.project}``);
+      y = drawContinuationHeader(doc, pageW, `TRADEMARK MASONRY - ${formData.submissionType.toUpperCase()} - ${formData.project}`);
     }
   };
 
