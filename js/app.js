@@ -164,6 +164,14 @@ function renderField(field, container) {
   if (field.type === 'weekly-inspection') { renderWeeklyInspection(field, container); return; }
   if (field.type === 'daily-inspection')  { renderDailyInspection(field, container);  return; }
   if (field.type === 'qaqc-table')        { renderQAQCTable(field, container);         return; }
+  if (field.type === 'section') {
+    const div = document.createElement('div');
+    div.className = 'section-header';
+    div.style.marginTop = '20px';
+    div.textContent = field.label;
+    container.appendChild(div);
+    return;
+  }
 
   const wrapper = document.createElement('div');
   wrapper.className = 'field-group';

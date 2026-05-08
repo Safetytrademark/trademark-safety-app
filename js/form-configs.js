@@ -547,20 +547,40 @@ const FORM_FIELDS = {
   ],
 
   'Incident Report': [
-    { id: 'injured_person',    label: "Injured / Affected Person's Name",   type: 'text', placeholder: 'Full name', required: true },
-    { id: 'incident_time',     label: 'Time of Incident',                   type: 'time', required: true },
-    { id: 'incident_location', label: 'Location of Incident',               type: 'text', placeholder: 'Exact location on site', required: true },
-    { id: 'description',       label: 'Description of What Happened',       type: 'textarea', placeholder: 'Describe the sequence of events...', required: true },
-    { id: 'injury_type',       label: 'Type of Injury / Incident',          type: 'radio',
-      options: ['Cut / Laceration','Bruise / Contusion','Sprain / Strain','Fracture','Eye Injury','Burn','Near Miss (No Injury)','Property Damage Only','Other'], required: true },
-    { id: 'body_part',         label: 'Body Part Affected',                 type: 'text', placeholder: 'e.g. Left hand, lower back' },
-    { id: 'medical_treatment', label: 'Medical Treatment Required',         type: 'radio',
-      options: ['None','First Aid on Site','Clinic Visit','Emergency Room','Hospitalization'], required: true },
-    { id: 'witnesses',         label: 'Witness Names',                      type: 'textarea', placeholder: 'Names of witnesses...' },
-    { id: 'root_cause',        label: 'Root Cause / Contributing Factors',  type: 'textarea', placeholder: 'What led to this incident?' },
-    { id: 'preventive_measures',label:'Preventive Measures',                type: 'textarea', placeholder: 'Steps to prevent recurrence...' },
-    { id: 'supervisor_name',   label: 'Supervisor Name',                    type: 'text', placeholder: 'Print full name', required: true },
-    { id: 'signature',         label: 'Supervisor Sign Off',                type: 'signature' }
+    // ── INCIDENT INFORMATION ──────────────────────────────────────────────
+    { id: '_section_incident',   label: '📋 Incident Information',          type: 'section' },
+    { id: 'incident_location',   label: 'Incident Location',                type: 'text',     placeholder: 'Exact location on site', required: true },
+    { id: 'incident_datetime',   label: 'Date & Time of Incident',          type: 'text',     placeholder: 'e.g. 2025-05-08  14:30', required: true },
+
+    // ── PERSON GIVING STATEMENT ───────────────────────────────────────────
+    { id: '_section_person',     label: '👤 Person Giving Statement',       type: 'section' },
+    { id: 'stmt_full_name',      label: 'Full Name',                        type: 'text',     placeholder: 'Full legal name', required: true },
+    { id: 'stmt_phone',          label: 'Phone',                            type: 'text',     placeholder: 'Phone number' },
+    { id: 'stmt_address',        label: 'Address',                          type: 'text',     placeholder: 'Home address' },
+    { id: 'stmt_trade',          label: 'Trade / Occupation',               type: 'text',     placeholder: 'e.g. Mason, Labourer' },
+    { id: 'stmt_years_exp',      label: 'Years of Experience',              type: 'text',     placeholder: 'e.g. 5 years' },
+    { id: 'stmt_other_exp',      label: 'Other Experience',                 type: 'text',     placeholder: 'Other relevant experience' },
+    { id: 'stmt_employer',       label: 'Employer',                         type: 'text',     placeholder: 'Company name' },
+    { id: 'stmt_was_present',    label: 'Were you present when the incident occurred?', type: 'radio',
+      options: ['Yes', 'No'], required: true },
+    { id: 'stmt_did_see',        label: 'Did you see it happen?',           type: 'radio',
+      options: ['Yes', 'No'], required: true },
+
+    // ── INCIDENT STATEMENT ────────────────────────────────────────────────
+    { id: '_section_statement',  label: '📝 Incident Statement',            type: 'section' },
+    { id: 'statement',           label: 'In your own words, state what you saw or what you know about this incident. Include dates/times and any specifics or details you feel are relevant. Answer as applicable: Who? What? Where? When? How? Why?',
+                                                                            type: 'textarea', placeholder: 'Write your full statement here...', required: true },
+    { id: 'continuation',        label: 'Continuation of Statement (if needed)', type: 'textarea', placeholder: 'Continue statement here...' },
+
+    // ── STATEMENT TAKEN BY ────────────────────────────────────────────────
+    { id: '_section_takenby',    label: '🖊️ Statement Taken By',           type: 'section' },
+    { id: 'taken_by_name',       label: 'Name',                            type: 'text',     placeholder: 'Name of person taking statement', required: true },
+    { id: 'taken_by_position',   label: 'Position',                        type: 'text',     placeholder: 'e.g. Foreman, Supervisor' },
+    { id: 'taken_by_company',    label: 'Company',                         type: 'text',     placeholder: 'Company name' },
+
+    // ── WITNESS DECLARATION ───────────────────────────────────────────────
+    { id: '_section_witness',    label: '✍️ Witness Declaration & Signature', type: 'section' },
+    { id: 'signature',           label: 'Witness Signature',               type: 'signature' }
   ],
 
   'Hazard Observation': [

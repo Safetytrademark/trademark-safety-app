@@ -88,6 +88,9 @@ async function generatePDF(formData, photos) {
   if (formData.submissionType === 'Production Report') {
     return generateProductionPDF(formData, photos);
   }
+  if (formData.submissionType === 'Incident Report') {
+    return generateIncidentReportPDF(formData, photos);
+  }
   if (['Telehandler Inspection','Forklift Inspection','E-Pallet Jack Inspection','Scaffolding Inspection'].includes(formData.submissionType)) {
     return generateDailyInspectionPDF(formData, photos);
   }
@@ -611,7 +614,311 @@ function fileToDataURL(file) {
   });
 }
 
-// â”€â”€ Weekly Timesheet PDF (landscape) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Incident Report PDF ───────────────────────────────────────────────────────
+async function generateIncidentReportPDF(formData, photos) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
+
+  const pageW  = doc.internal.pageSize.getWidth();
+  const pageH  = doc.internal.pageSize.getHeight();
+  const margin = 14;
+  const cW     = pageW - margin * 2;
+
+  const NAVY  = [0, 32, 91];
+  const RED   = [138, 42, 43];
+  const WHITE = [255, 255, 255];
+  const LGRAY = [220, 220, 220];
+  const DGRAY = [60, 60, 60];
+  const MGRAY = [130, 130, 130];
+  const BG    = [248, 249, 252];
+  const LBLUE = [235, 240, 252];
+
+  const f = formData.fields || {};
+
+  // helper: draw a labelled field row (label above, value line below)
+  function fieldRow(label, value, x, y, w, h) {
+    doc.setFillColor(...BG);
+    doc.setDrawColor(...LGRAY);
+    doc.setLineWidth(0.25);
+    doc.rect(x, y, w, h, 'FD');
+    doc.setFontSize(6); doc.setFont('helvetica', 'normal'); doc.setTextColor(...MGRAY);
+    doc.text(label.toUpperCase(), x + 3, y + 5);
+    doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.setTextColor(...DGRAY);
+    const lines = doc.splitTextToSize(value || '—', w - 6);
+    doc.text(lines[0] || '—', x + 3, y + h - 4);
+  }
+
+  // helper: section header bar
+  function sectionBar(label, y) {
+    doc.setFillColor(...NAVY);
+    doc.rect(margin, y, cW, 7, 'F');
+    doc.setFillColor(...RED);
+    doc.rect(margin, y, 3, 7, 'F');
+    doc.setFontSize(7.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...WHITE);
+    doc.text(label, margin + 6, y + 5);
+    return y + 7;
+  }
+
+  // helper: large text area box
+  function textBox(label, value, x, y, w, h) {
+    doc.setFillColor(...BG);
+    doc.setDrawColor(...LGRAY);
+    doc.setLineWidth(0.25);
+    doc.rect(x, y, w, h, 'FD');
+    doc.setFontSize(6.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(...MGRAY);
+    doc.text(label.toUpperCase(), x + 3, y + 5);
+    if (value) {
+      doc.setFontSize(8.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(...DGRAY);
+      const lines = doc.splitTextToSize(value, w - 6);
+      lines.slice(0, Math.floor((h - 10) / 4.5)).forEach((ln, i) => {
+        doc.text(ln, x + 3, y + 11 + i * 4.5);
+      });
+    }
+    return y + h;
+  }
+
+  // helper: yes/no row
+  function yesNoRow(label, value, x, y, w) {
+    const h = 10;
+    doc.setFillColor(...BG);
+    doc.setDrawColor(...LGRAY);
+    doc.setLineWidth(0.25);
+    doc.rect(x, y, w, h, 'FD');
+    doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(...DGRAY);
+    doc.text(label, x + 3, y + 6.5);
+    // Yes box
+    const bx = x + w - 34, by = y + 2, bs = 6;
+    doc.setDrawColor(...NAVY); doc.setLineWidth(0.4);
+    doc.rect(bx, by, bs, bs, 'S');
+    doc.rect(bx + 14, by, bs, bs, 'S');
+    doc.setFontSize(7); doc.setFont('helvetica', 'bold'); doc.setTextColor(...NAVY);
+    doc.text('YES', bx + bs + 1, by + 4.5);
+    doc.text('NO',  bx + 14 + bs + 1, by + 4.5);
+    if (value === 'Yes') {
+      doc.setFillColor(...NAVY); doc.rect(bx + 1, by + 1, bs - 2, bs - 2, 'F');
+    } else if (value === 'No') {
+      doc.setFillColor(...NAVY); doc.rect(bx + 15, by + 1, bs - 2, bs - 2, 'F');
+    }
+    return y + h;
+  }
+
+  // helper: signature block
+  function sigBlock(label, sigData, takenBy, y) {
+    const h = 28;
+    if (y + h > pageH - 16) { doc.addPage(); drawPage2Header(); y = 24; }
+    doc.setFillColor(...BG);
+    doc.setDrawColor(...LGRAY);
+    doc.setLineWidth(0.25);
+    doc.rect(margin, y, cW, h, 'FD');
+    doc.setFontSize(6.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(...MGRAY);
+    doc.text(label.toUpperCase(), margin + 3, y + 5);
+    if (takenBy) {
+      doc.setFontSize(7.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(...DGRAY);
+      doc.text('The foregoing statement, which I have given to: ' + (takenBy || '___________________'), margin + 3, y + 11);
+      doc.text('has been written and/or read over by me. I understand the contents and declare it truly and correctly describes the incident.', margin + 3, y + 16);
+    }
+    // Signature image if available
+    if (sigData) {
+      try {
+        doc.addImage(sigData, 'PNG', margin + 3, y + 8, 60, 16);
+      } catch(e) {}
+    }
+    // Date line
+    doc.setFontSize(7.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(...MGRAY);
+    doc.text('Date: ' + (formData.date || ''), margin + cW - 50, y + h - 5);
+    return y + h;
+  }
+
+  // Disclaimer text
+  const DISCLAIMER = 'The information in this form is intended for general use and may not apply to every circumstance. It is not a definitive guide to government regulations and does not relieve persons from their responsibilities under applicable legislation. Trade Mark Masonry Ltd. does not guarantee the accuracy of, nor assume liability for, the information presented here.';
+
+  function drawPage2Header() {
+    doc.setFillColor(...NAVY); doc.rect(0, 0, pageW, 12, 'F');
+    doc.setFillColor(...RED);  doc.rect(0, 0, 3, 12, 'F');
+    doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(...WHITE);
+    doc.text('INCIDENT STATEMENT  —  Trade Mark Masonry Ltd.  —  Complete one form per witness', 7, 8);
+    doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(200, 210, 230);
+    doc.text('Page 2 of 2', pageW - margin, 8, { align: 'right' });
+  }
+
+  function drawDisclaimer(y) {
+    if (y + 14 > pageH - 6) return;
+    doc.setFontSize(6); doc.setFont('helvetica', 'italic'); doc.setTextColor(...MGRAY);
+    const lines = doc.splitTextToSize(DISCLAIMER, cW);
+    doc.text(lines, margin, y + 4);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // PAGE 1
+  // ═══════════════════════════════════════════════════════════════════════
+  // Main header
+  doc.setFillColor(...NAVY); doc.rect(0, 0, pageW, 14, 'F');
+  doc.setFillColor(...RED);  doc.rect(0, 0, 3, 14, 'F');
+
+  // Logo white box
+  doc.setFillColor(...WHITE); doc.roundedRect(6, 2, 52, 10, 1, 1, 'F');
+  if (typeof TM_LOGO_B64 !== 'undefined') {
+    try {
+      doc.addImage(TM_LOGO_B64, 'PNG', 8, 2.8, 48, 8.2);
+    } catch(e) {
+      doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.setTextColor(...NAVY);
+      doc.text('TM', 32, 8.5, { align: 'center' });
+    }
+  }
+
+  doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(...WHITE);
+  doc.text('INCIDENT STATEMENT', 62, 7);
+  doc.setFontSize(6.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(180, 205, 235);
+  doc.text('Trade Mark Masonry Ltd.  —  Complete one form per witness', 62, 11.5);
+
+  doc.setFontSize(7); doc.setFont('helvetica', 'bold'); doc.setTextColor(200, 215, 240);
+  doc.text('Page 1 of 2', pageW - margin, 8, { align: 'right' });
+
+  let y = 18;
+
+  // ── INCIDENT INFORMATION ────────────────────────────────────────────────
+  y = sectionBar('INCIDENT INFORMATION', y);
+  const col2 = cW / 2;
+
+  // Row 1: Project Name | Project #
+  const projNum = (formData.project || '').match(/(\d{2}TM\d{3})/)?.[1] || '—';
+  fieldRow('Project Name', formData.project || '—', margin, y, col2, 12);
+  fieldRow('Project #',    projNum,                  margin + col2, y, col2, 12);
+  y += 12;
+
+  // Row 2: Incident Location (full width)
+  fieldRow('Incident Location', f.incident_location || '—', margin, y, cW, 12);
+  y += 12;
+
+  // Row 3: Date & Time | Submitted by
+  fieldRow('Date & Time of Incident', f.incident_datetime || formData.date || '—', margin, y, col2, 12);
+  fieldRow('Report Submitted by', formData.foremanName || '—', margin + col2, y, col2, 12);
+  y += 13;
+
+  // ── PERSON GIVING STATEMENT ─────────────────────────────────────────────
+  y = sectionBar('PERSON GIVING STATEMENT', y);
+
+  // Row: Full Name | Phone
+  const col3 = cW / 3;
+  fieldRow('Full Name', f.stmt_full_name || '—', margin, y, col3 * 2, 12);
+  fieldRow('Phone',     f.stmt_phone     || '—', margin + col3 * 2, y, col3, 12);
+  y += 12;
+
+  // Row: Address (full width)
+  fieldRow('Address', f.stmt_address || '—', margin, y, cW, 10);
+  y += 10;
+
+  // Row: Trade | Years Exp | Employer
+  fieldRow('Trade / Occupation',   f.stmt_trade      || '—', margin,           y, col3, 10);
+  fieldRow('Years of Experience',  f.stmt_years_exp  || '—', margin + col3,    y, col3, 10);
+  fieldRow('Employer',             f.stmt_employer   || '—', margin + col3 * 2, y, col3, 10);
+  y += 10;
+
+  // Row: Other Experience (full width)
+  fieldRow('Other Experience', f.stmt_other_exp || '—', margin, y, cW, 10);
+  y += 11;
+
+  // Yes/No rows
+  y = yesNoRow('Were you present when the incident occurred?', f.stmt_was_present, margin, y, cW);
+  y += 1;
+  y = yesNoRow('Did you see it happen?', f.stmt_did_see, margin, y, cW);
+  y += 4;
+
+  // ── INCIDENT STATEMENT ──────────────────────────────────────────────────
+  y = sectionBar('INCIDENT STATEMENT', y);
+  doc.setFontSize(7); doc.setFont('helvetica', 'italic'); doc.setTextColor(...MGRAY);
+  doc.text('In your own words, state what you saw or what you know. Include dates/times and specifics. Answer: Who? What? Where? When? How? Why?', margin + 3, y + 4);
+  y += 7;
+
+  // Statement text box — use remaining space on page 1
+  const stmtH = Math.min(pageH - y - 36, 80);
+  y = textBox('Statement', f.statement || '', margin, y, cW, stmtH);
+  y += 2;
+
+  // Disclaimer at bottom of page 1
+  drawDisclaimer(pageH - 20);
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // PAGE 2
+  // ═══════════════════════════════════════════════════════════════════════
+  doc.addPage();
+  drawPage2Header();
+  y = 17;
+
+  // ── CONTINUATION ────────────────────────────────────────────────────────
+  y = sectionBar('CONTINUATION OF INCIDENT STATEMENT', y);
+  y = textBox('Continuation', f.continuation || '', margin, y, cW, 58);
+  y += 4;
+
+  // ── PERSON RECEIVING STATEMENT ──────────────────────────────────────────
+  y = sectionBar('PERSON RECEIVING OR TAKING STATEMENT', y);
+  const half = cW / 2;
+  fieldRow('Date', formData.date || '—', margin, y, half, 10);
+  fieldRow('Signature of Person Receiving / Taking Statement', '', margin + half, y, half, 10);
+  y += 11;
+
+  // ── WITNESS DECLARATION ─────────────────────────────────────────────────
+  y = sectionBar('WITNESS DECLARATION', y);
+  doc.setFontSize(7.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(...DGRAY);
+  const declText = 'The foregoing statement, which I have given to: ' + (f.taken_by_name || '___________________________________') +
+    ' has been written and/or read over by me. I understand the contents of this statement and I declare that it truly and correctly describes the incident witnessed and records the information given by me.';
+  const declLines = doc.splitTextToSize(declText, cW - 6);
+  doc.setFillColor(...BG);
+  doc.setDrawColor(...LGRAY); doc.setLineWidth(0.25);
+  const declH = declLines.length * 4 + 8;
+  doc.rect(margin, y, cW, declH, 'FD');
+  doc.text(declLines, margin + 3, y + 5);
+  y += declH + 2;
+
+  // Signature + Date side by side
+  const sigW = cW * 0.6;
+  const dateW = cW - sigW;
+  doc.setFillColor(...BG); doc.setDrawColor(...LGRAY); doc.setLineWidth(0.25);
+  doc.rect(margin, y, sigW, 22, 'FD');
+  doc.rect(margin + sigW, y, dateW, 22, 'FD');
+  doc.setFontSize(6.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(...MGRAY);
+  doc.text('SIGNATURE OF WITNESS', margin + 3, y + 5);
+  doc.text('DATE', margin + sigW + 3, y + 5);
+  doc.setFontSize(8); doc.setTextColor(...DGRAY);
+  doc.text(formData.date || '', margin + sigW + 3, y + 15);
+  if (formData.signature) {
+    try { doc.addImage(formData.signature, 'PNG', margin + 3, y + 5, sigW - 6, 14); } catch(e) {}
+  }
+  y += 24;
+
+  // ── STATEMENT TAKEN BY ──────────────────────────────────────────────────
+  y = sectionBar('STATEMENT TAKEN BY', y);
+  const q3 = cW / 3;
+  fieldRow('Name',     f.taken_by_name     || '—', margin,           y, q3, 10);
+  fieldRow('Position', f.taken_by_position || '—', margin + q3,      y, q3, 10);
+  fieldRow('Company',  f.taken_by_company  || '—', margin + q3 * 2,  y, q3, 10);
+  y += 10;
+
+  // Signature + Date/Time
+  doc.setFillColor(...BG); doc.setDrawColor(...LGRAY); doc.setLineWidth(0.25);
+  doc.rect(margin, y, sigW, 20, 'FD');
+  doc.rect(margin + sigW, y, dateW, 20, 'FD');
+  doc.setFontSize(6.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(...MGRAY);
+  doc.text('SIGNATURE', margin + 3, y + 5);
+  doc.text('DATE / TIME', margin + sigW + 3, y + 5);
+  doc.setFontSize(8); doc.setTextColor(...DGRAY);
+  doc.text(formData.date || '', margin + sigW + 3, y + 13);
+  y += 22;
+
+  // ── Photos (if any) ────────────────────────────────────────────────────
+  if (photos && photos.length > 0) {
+    if (y > pageH - 60) { doc.addPage(); drawPage2Header(); y = 17; }
+    y = sectionBar('SITE PHOTOS', y);
+    y = await renderPhotosPDF(doc, photos, y + 2, margin, cW, pageH, { NAVY, RED, LGRAY, MGRAY });
+  }
+
+  // Disclaimer at bottom of page 2
+  drawDisclaimer(pageH - 18);
+
+  return doc.output('arraybuffer');
+}
+
+// ── Weekly Timesheet PDF (landscape) ────────────────────────────────────────
 async function generateTimesheetPDF(formData) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'letter' });
