@@ -91,6 +91,9 @@ async function generatePDF(formData, photos) {
   if (formData.submissionType === 'Incident Report') {
     return generateIncidentReportPDF(formData, photos);
   }
+  if (formData.submissionType === 'Weekly Toolbox Talk') {
+    return generateToolboxPDF(formData, photos);
+  }
   if (['Telehandler Inspection','Forklift Inspection','E-Pallet Jack Inspection','Scaffolding Inspection'].includes(formData.submissionType)) {
     return generateDailyInspectionPDF(formData, photos);
   }
@@ -612,6 +615,375 @@ function fileToDataURL(file) {
     };
     img.src = URL.createObjectURL(file);
   });
+}
+
+// ── Weekly Toolbox Meeting PDF ────────────────────────────────────────────────
+async function generateToolboxPDF(formData, photos) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
+
+  const pageW  = doc.internal.pageSize.getWidth();
+  const pageH  = doc.internal.pageSize.getHeight();
+  const margin = 14;
+  const cW     = pageW - margin * 2;
+
+  const NAVY  = [0, 32, 91];
+  const RED   = [138, 42, 43];
+  const WHITE = [255, 255, 255];
+  const LGRAY = [220, 220, 220];
+  const DGRAY = [55, 55, 55];
+  const MGRAY = [130, 130, 130];
+  const BG    = [248, 249, 252];
+  const GREEN = [16, 185, 129];
+  const ORANGE= [249, 115, 22];
+
+  const f = formData.fields || {};
+
+  function checkNewPage(needed) {
+    if (y + needed > pageH - 18) {
+      doc.addPage(); y = 14;
+      drawContHeader();
+    }
+  }
+
+  function drawContHeader() {
+    doc.setFillColor(...NAVY); doc.rect(0, 0, pageW, 10, 'F');
+    doc.setFillColor(...RED);  doc.rect(0, 0, 3, 10, 'F');
+    doc.setFontSize(7.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...WHITE);
+    doc.text('WEEKLY TOOLBOX MEETING  —  Trade Mark Masonry Ltd. (continued)', 6, 7);
+  }
+
+  function sectionBar(num, label, y) {
+    doc.setFillColor(...NAVY); doc.rect(margin, y, cW, 8, 'F');
+    doc.setFillColor(...RED);  doc.rect(margin, y, 3, 8, 'F');
+    doc.setFontSize(8.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...WHITE);
+    doc.text(num + '  ' + label.toUpperCase(), margin + 6, y + 5.5);
+    return y + 8;
+  }
+
+  function fieldRow(label, value, x, y, w, h) {
+    doc.setFillColor(...BG);
+    doc.setDrawColor(...LGRAY); doc.setLineWidth(0.25);
+    doc.rect(x, y, w, h, 'FD');
+    doc.setFontSize(6); doc.setFont('helvetica', 'normal'); doc.setTextColor(...MGRAY);
+    doc.text(label.toUpperCase(), x + 3, y + 4.5);
+    doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.setTextColor(...DGRAY);
+    const lines = doc.splitTextToSize(String(value || '—'), w - 6);
+    doc.text(lines[0] || '—', x + 3, y + h - 3.5);
+  }
+
+  function textBlock(label, value, x, y, w, h) {
+    doc.setFillColor(...BG);
+    doc.setDrawColor(...LGRAY); doc.setLineWidth(0.25);
+    doc.rect(x, y, w, h, 'FD');
+    doc.setFontSize(6); doc.setFont('helvetica', 'normal'); doc.setTextColor(...MGRAY);
+    doc.text(label.toUpperCase(), x + 3, y + 4.5);
+    if (value) {
+      doc.setFontSize(8.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(...DGRAY);
+      const lines = doc.splitTextToSize(value, w - 6);
+      lines.slice(0, Math.floor((h - 9) / 4.5)).forEach((ln, i) => {
+        doc.text(ln, x + 3, y + 10 + i * 4.5);
+      });
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // HEADER
+  // ═══════════════════════════════════════════════════════════
+  doc.setFillColor(...NAVY); doc.rect(0, 0, pageW, 16, 'F');
+  doc.setFillColor(...RED);  doc.rect(0, 0, 3, 16, 'F');
+
+  doc.setFillColor(...WHITE); doc.roundedRect(6, 2, 52, 12, 1, 1, 'F');
+  if (typeof TM_LOGO_B64 !== 'undefined') {
+    try { doc.addImage(TM_LOGO_B64, 'PNG', 7.5, 3.5, 49, 9); } catch(e) {}
+  }
+
+  doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(...WHITE);
+  doc.text('WEEKLY TOOLBOX MEETING', 62, 8);
+  doc.setFontSize(6.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(180, 205, 235);
+  doc.text('Complete before work begins each week  —  Trade Mark Masonry Ltd.', 62, 13);
+
+  // Red badge top-right
+  doc.setFillColor(...RED); doc.roundedRect(pageW - margin - 42, 4, 42, 9, 1.5, 1.5, 'F');
+  doc.setFontSize(6.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...WHITE);
+  doc.text('TOOLBOX MEETING', pageW - margin - 21, 9.5, { align: 'center' });
+
+  let y = 20;
+
+  // Info bar: Date | Project # | Time | Foreman | # Workers
+  const col5 = cW / 5;
+  const projNum = (formData.project || '').match(/(\d{2}TM\d{3})/)?.[1] || '—';
+  [
+    ['Date',       formData.date || '—'],
+    ['Project #',  projNum],
+    ['Time',       ''],
+    ['Foreman',    formData.foremanName || '—'],
+    ['# Workers',  '']
+  ].forEach(([lbl, val], i) => {
+    fieldRow(lbl, val, margin + col5 * i, y, col5, 11);
+  });
+  y += 11;
+
+  // Project Name (full width)
+  fieldRow('Project Name', formData.project || '—', margin, y, cW, 10);
+  y += 11;
+
+  // ═══ ① WHAT ARE WE DOING THIS WEEK? ═══════════════════════
+  y = sectionBar('①', 'What Are We Doing This Week?', y);
+  textBlock('Brief description of scope — helps crew understand context for hazards below', f.work_scope || '', margin, y, cW, 22);
+  y += 23;
+
+  // ═══ ② SAFETY TOPIC OF THE WEEK ════════════════════════════
+  checkNewPage(70);
+  y = sectionBar('②', 'Safety Topic of the Week', y);
+
+  // Topic checkboxes in 2 columns
+  const allTopics = [
+    'Silica dust / respiratory protection',
+    'Fall protection & scaffold inspection',
+    'Telehandler / forklift safety',
+    'PPE requirements',
+    'Manual lifting / ergonomics',
+    'Heat / cold stress',
+    'Housekeeping & site organization',
+    'Near miss / incident review',
+    'Lock out / tag out',
+    'Emergency procedures & muster point'
+  ];
+  const selected = f.safety_topics || [];
+  const colW = cW / 2;
+  const rowH = 6;
+
+  doc.setFillColor(...BG); doc.setDrawColor(...LGRAY); doc.setLineWidth(0.2);
+  const topicBoxH = Math.ceil(allTopics.length / 2) * rowH + 8;
+  doc.rect(margin, y, cW, topicBoxH, 'FD');
+
+  allTopics.forEach((topic, idx) => {
+    const col = idx % 2;
+    const row = Math.floor(idx / 2);
+    const tx = margin + 3 + col * colW;
+    const ty = y + 5 + row * rowH;
+    const isChecked = selected.includes(topic);
+
+    doc.setDrawColor(...NAVY); doc.setLineWidth(0.3);
+    doc.rect(tx, ty - 3.5, 4, 4, 'S');
+    if (isChecked) {
+      doc.setFillColor(...NAVY); doc.rect(tx + 0.5, ty - 3, 3, 3, 'F');
+    }
+    doc.setFontSize(7); doc.setFont('helvetica', isChecked ? 'bold' : 'normal');
+    doc.setTextColor(isChecked ? ...NAVY : ...DGRAY);
+    doc.text(topic, tx + 5.5, ty);
+  });
+
+  // Other topic
+  y += topicBoxH + 1;
+  if (f.topic_other) {
+    doc.setFillColor(...BG); doc.setDrawColor(...LGRAY); doc.setLineWidth(0.2);
+    doc.rect(margin, y, cW, 8, 'FD');
+    doc.setFontSize(6); doc.setFont('helvetica', 'normal'); doc.setTextColor(...MGRAY);
+    doc.text('OTHER TOPIC', margin + 3, y + 4.5);
+    doc.setFontSize(8.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(...DGRAY);
+    doc.text(f.topic_other || '', margin + 26, y + 4.5);
+    y += 9;
+  }
+
+  // Key points
+  checkNewPage(28);
+  textBlock('Key Points Discussed', f.key_points || '', margin, y, cW, 26);
+  y += 27;
+
+  // ═══ ③ HAZARD REVIEW ════════════════════════════════════════
+  checkNewPage(55);
+  y = sectionBar('③', 'Hazard Review', y);
+
+  // Table header
+  const hzW = cW * 0.44, riskW = cW * 0.16, ctrlW = cW - hzW - riskW;
+  doc.setFillColor(230, 235, 248); doc.setDrawColor(...LGRAY); doc.setLineWidth(0.25);
+  doc.rect(margin, y, cW, 7, 'FD');
+  doc.setFontSize(7); doc.setFont('helvetica', 'bold'); doc.setTextColor(...NAVY);
+  doc.text('HAZARD / TASK', margin + 3, y + 4.5);
+  doc.text('RISK', margin + hzW + riskW / 2, y + 4.5, { align: 'center' });
+  doc.text('CONTROL / ACTION', margin + hzW + riskW + 3, y + 4.5);
+  y += 7;
+
+  const hazardRows = f.hazard_review || [];
+  const allHazardRows = [
+    ...hazardRows,
+    // ensure blank "Other" row always appears
+    ...(hazardRows.find(r => r.custom) ? [] : [{ hazard: 'Other: ______________________________', risk: '', control: '', included: false, custom: true }])
+  ];
+
+  allHazardRows.forEach((row, idx) => {
+    const rH = 10;
+    if (y + rH > pageH - 18) { doc.addPage(); y = 14; drawContHeader(); y = 17; }
+
+    const bg = idx % 2 === 0 ? BG : [240, 243, 250];
+    doc.setFillColor(...bg); doc.setDrawColor(...LGRAY); doc.setLineWidth(0.2);
+    doc.rect(margin, y, cW, rH, 'FD');
+
+    // Checkbox
+    doc.setDrawColor(...NAVY); doc.setLineWidth(0.35);
+    doc.rect(margin + 1.5, y + 2.5, 4.5, 4.5, 'S');
+    if (row.included) {
+      doc.setFillColor(...NAVY);
+      doc.rect(margin + 2, y + 3, 3.5, 3.5, 'F');
+    }
+
+    // Hazard name
+    doc.setFontSize(7.5); doc.setFont('helvetica', row.included ? 'bold' : 'normal');
+    doc.setTextColor(row.included ? ...NAVY : ...DGRAY);
+    const hzText = row.hazard || 'Other: ______________________________';
+    const hzLines = doc.splitTextToSize(hzText, hzW - 10);
+    doc.text(hzLines[0], margin + 8, y + 6);
+
+    // Risk level pill
+    const risk = row.risk || '';
+    const riskColor = risk === 'H' ? RED : risk === 'M' ? ORANGE : risk === 'L' ? GREEN : LGRAY;
+    if (risk) {
+      doc.setFillColor(...riskColor);
+      doc.roundedRect(margin + hzW + (riskW - 12) / 2, y + 2, 12, 6, 1, 1, 'F');
+      doc.setFontSize(7); doc.setFont('helvetica', 'bold'); doc.setTextColor(...WHITE);
+      doc.text(risk === 'H' ? 'HIGH' : risk === 'M' ? 'MED' : 'LOW',
+        margin + hzW + riskW / 2, y + 6.2, { align: 'center' });
+    } else {
+      doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(...MGRAY);
+      doc.text('H  /  M  /  L', margin + hzW + riskW / 2, y + 6, { align: 'center' });
+    }
+
+    // Control text
+    if (row.control) {
+      doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(...DGRAY);
+      const ctrlLines = doc.splitTextToSize(row.control, ctrlW - 4);
+      doc.text(ctrlLines[0], margin + hzW + riskW + 2, y + 6);
+    }
+
+    y += rH;
+  });
+
+  // Risk legend
+  doc.setFontSize(6.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(...MGRAY);
+  doc.text('H — HIGH  Immediate action required     M — MEDIUM  Controls must be applied     L — LOW  Monitor and review', margin, y + 4);
+  y += 7;
+
+  // ═══ ④ FOLLOW-UP FROM LAST MEETING ════════════════════════
+  checkNewPage(24);
+  y = sectionBar('④', 'Follow-Up from Last Meeting', y);
+
+  function yesNoRow(label, value, y) {
+    doc.setFillColor(...BG); doc.setDrawColor(...LGRAY); doc.setLineWidth(0.25);
+    doc.rect(margin, y, cW, 10, 'FD');
+    doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(...DGRAY);
+    doc.text(label, margin + 3, y + 6.5);
+    const bx = margin + cW - 36, by = y + 2.5, bs = 5;
+    doc.setDrawColor(...NAVY); doc.setLineWidth(0.4);
+    doc.rect(bx, by, bs, bs, 'S');
+    doc.rect(bx + 14, by, bs, bs, 'S');
+    doc.setFontSize(7); doc.setFont('helvetica', 'bold'); doc.setTextColor(...NAVY);
+    doc.text('YES', bx + bs + 1.5, by + 3.8);
+    doc.text('NO',  bx + 14 + bs + 1.5, by + 3.8);
+    if (value === 'Yes') { doc.setFillColor(...NAVY); doc.rect(bx + 0.7, by + 0.7, bs - 1.4, bs - 1.4, 'F'); }
+    if (value === 'No')  { doc.setFillColor(...NAVY); doc.rect(bx + 14.7, by + 0.7, bs - 1.4, bs - 1.4, 'F'); }
+    return y + 10;
+  }
+
+  y = yesNoRow('Any incidents or near misses since last meeting?', f.incidents_since_last, y);
+  y += 1;
+  y = yesNoRow('Any open action items from last week?', f.open_action_items, y);
+  y += 4;
+
+  // ═══ ⑤ CREW ATTENDANCE ══════════════════════════════════════
+  checkNewPage(50);
+  y = sectionBar('⑤', 'Crew Attendance  —  Print name to confirm you attended and understood today\'s meeting', y);
+
+  // Two-column crew table
+  const crew = f.crew || [];
+  const crewColW = cW / 2;
+  const initW = 22;
+  const nameW = crewColW - initW;
+
+  // Table header
+  doc.setFillColor(230, 235, 248); doc.setDrawColor(...LGRAY); doc.setLineWidth(0.2);
+  doc.rect(margin, y, cW, 7, 'FD');
+  ['PRINT NAME', 'INITIALS', 'PRINT NAME', 'INITIALS'].forEach((hdr, i) => {
+    const sx = margin + (i < 2 ? 0 : crewColW) + (i % 2 === 0 ? 2 : nameW + 2);
+    doc.setFontSize(6.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...NAVY);
+    doc.text(hdr, sx, y + 4.8);
+  });
+  y += 7;
+
+  // Ensure at least 8 rows visible
+  const minRows = Math.max(crew.length, 8);
+  for (let i = 0; i < minRows; i++) {
+    const rH = 8;
+    if (y + rH > pageH - 20) { doc.addPage(); y = 14; drawContHeader(); y = 17; }
+
+    const bg = i % 2 === 0 ? BG : [240, 243, 250];
+    doc.setFillColor(...bg); doc.setDrawColor(...LGRAY); doc.setLineWidth(0.2);
+
+    // Left column
+    doc.rect(margin, y, nameW, rH, 'FD');
+    doc.rect(margin + nameW, y, initW, rH, 'FD');
+    // Right column
+    doc.rect(margin + crewColW, y, nameW, rH, 'FD');
+    doc.rect(margin + crewColW + nameW, y, initW, rH, 'FD');
+
+    // Fill names from state
+    const left  = crew[i * 2]     || {};
+    const right = crew[i * 2 + 1] || {};
+    doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(...DGRAY);
+    if (left.name)  doc.text(left.name,  margin + 2, y + 5.5);
+    if (right.name) doc.text(right.name, margin + crewColW + 2, y + 5.5);
+    y += rH;
+  }
+  y += 4;
+
+  // ═══ FOREMAN SIGN-OFF ═══════════════════════════════════════
+  checkNewPage(36);
+  doc.setFillColor(...NAVY); doc.rect(margin, y, cW, 8, 'F');
+  doc.setFillColor(...RED);  doc.rect(margin, y, 3, 8, 'F');
+  doc.setFontSize(8.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...WHITE);
+  doc.text('FOREMAN SIGN-OFF  —  I confirm this meeting was conducted, hazards were reviewed, and all crew members were briefed.', margin + 6, y + 5.5);
+  y += 8;
+
+  const halfC = cW / 2;
+  fieldRow('Foreman — Printed Name', f.supervisor_name || '—', margin, y, halfC, 12);
+  fieldRow('Date', formData.date || '—', margin + halfC, y, halfC / 2, 12);
+  y += 12;
+
+  // Signature
+  doc.setFillColor(...BG); doc.setDrawColor(...LGRAY); doc.setLineWidth(0.25);
+  doc.rect(margin, y, cW * 0.7, 22, 'FD');
+  doc.setFontSize(6); doc.setFont('helvetica', 'normal'); doc.setTextColor(...MGRAY);
+  doc.text('FOREMAN SIGNATURE', margin + 3, y + 5);
+  if (formData.signature) {
+    try { doc.addImage(formData.signature, 'PNG', margin + 3, y + 6, cW * 0.7 - 6, 13); } catch(e) {}
+  }
+  y += 24;
+
+  // Photos
+  if (photos && photos.length > 0) {
+    checkNewPage(60);
+    doc.setFillColor(...NAVY); doc.rect(margin, y, cW, 7, 'F');
+    doc.setFillColor(...RED);  doc.rect(margin, y, 3, 7, 'F');
+    doc.setFontSize(7.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...WHITE);
+    doc.text('SITE PHOTOS', margin + 6, y + 4.8);
+    y += 9;
+    y = await renderPhotosPDF(doc, photos, y, margin, cW, pageH, { NAVY, RED, LGRAY, MGRAY });
+  }
+
+  // Footer on every page
+  const totalPages = doc.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    doc.setFontSize(6.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(...MGRAY);
+    doc.text(
+      'Send completed form to: info@trademarkmasonry.ca  |  Retain one copy on site  |  Trade Mark Masonry Ltd. — #11 – 8075 Enterprise St., Burnaby, BC  V5A 1V5',
+      pageW / 2, pageH - 6, { align: 'center' }
+    );
+    doc.text(`Page ${p} of ${totalPages}`, pageW - margin, pageH - 6, { align: 'right' });
+  }
+
+  return doc.output('arraybuffer');
 }
 
 // ── Incident Report PDF ───────────────────────────────────────────────────────

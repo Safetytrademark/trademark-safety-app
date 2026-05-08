@@ -272,6 +272,15 @@ const DEFAULT_FLRA_TASKS = [
   }
 ];
 
+// ── TOOLBOX HAZARD ROWS (pre-defined, matches TM Weekly Toolbox Meeting form) ─
+const TOOLBOX_HAZARDS = [
+  'Working at height / scaffold / ladder use',
+  'Telehandler / mobile equipment in area',
+  'Silica dust exposure — cutting CMU or masonry',
+  'Manual handling — heavy block, mortar',
+  'Adverse weather — heat, cold, rain, wind'
+];
+
 // ── FLRA HAZARDS LIST ─────────────────────────────────────────────────────────
 const FLRA_HAZARDS = [
   'Others Working Above / Below',
@@ -537,13 +546,46 @@ const FORM_FIELDS = {
   ],
 
   'Weekly Toolbox Talk': [
-    { id: 'topic',             label: 'Talk Topic / Title',                 type: 'text', placeholder: 'e.g. Working at Heights', required: true },
-    { id: 'key_points',        label: 'Key Points Discussed',               type: 'textarea', placeholder: 'Summarize the main safety points covered...' },
-    { id: 'hazards',           label: 'Specific Hazards Discussed',         type: 'textarea', placeholder: 'Hazards relevant to this topic...' },
-    { id: 'questions_raised',  label: 'Questions / Concerns Raised',        type: 'textarea', placeholder: 'Any questions or concerns from the crew...' },
-    { id: 'crew',              label: 'Crew Sign-In',                       type: 'crew-signin' },
-    { id: 'supervisor_name',   label: 'Supervisor Name',                    type: 'text', placeholder: 'Print full name', required: true },
-    { id: 'signature',         label: 'Supervisor Sign Off',                type: 'signature' }
+    // ① WHAT ARE WE DOING THIS WEEK?
+    { id: '_section_scope',       label: '① What Are We Doing This Week?',           type: 'section' },
+    { id: 'work_scope',           label: 'Brief description of scope',               type: 'textarea', placeholder: 'Helps crew understand context for hazards below...', required: true },
+
+    // ② SAFETY TOPIC OF THE WEEK
+    { id: '_section_topic',       label: '② Safety Topic of the Week',              type: 'section' },
+    { id: 'safety_topics',        label: 'Circle or check your topic(s)',            type: 'checkbox-group',
+      options: [
+        'Silica dust / respiratory protection',
+        'Fall protection & scaffold inspection',
+        'Telehandler / forklift safety',
+        'PPE requirements',
+        'Manual lifting / ergonomics',
+        'Heat / cold stress',
+        'Housekeeping & site organization',
+        'Near miss / incident review',
+        'Lock out / tag out',
+        'Emergency procedures & muster point'
+      ]
+    },
+    { id: 'topic_other',          label: 'Other topic (if selected above)',          type: 'text',     placeholder: 'Describe other topic...' },
+    { id: 'key_points',           label: 'Key Points Discussed',                    type: 'textarea', placeholder: 'Summarize the main safety points covered...', required: true },
+
+    // ③ HAZARD REVIEW
+    { id: '_section_hazards',     label: '③ Hazard Review',                         type: 'section' },
+    { id: 'hazard_review',        label: 'Identify what could go wrong and how to control it', type: 'toolbox-hazards' },
+
+    // ④ FOLLOW-UP FROM LAST MEETING
+    { id: '_section_followup',    label: '④ Follow-Up from Last Meeting',           type: 'section' },
+    { id: 'incidents_since_last', label: 'Any incidents or near misses since last meeting?', type: 'radio', options: ['Yes', 'No'], required: true },
+    { id: 'open_action_items',    label: 'Any open action items from last week?',   type: 'radio', options: ['Yes', 'No'], required: true },
+
+    // ⑤ CREW ATTENDANCE
+    { id: '_section_crew',        label: '⑤ Crew Attendance',                       type: 'section' },
+    { id: 'crew',                 label: 'Print name to confirm attendance',        type: 'crew-signin' },
+
+    // FOREMAN SIGN-OFF
+    { id: '_section_signoff',     label: 'Foreman Sign-Off',                        type: 'section' },
+    { id: 'supervisor_name',      label: 'Foreman — Printed Name',                 type: 'text',     placeholder: 'Print full name', required: true },
+    { id: 'signature',            label: 'Foreman — Signature',                    type: 'signature' }
   ],
 
   'Incident Report': [

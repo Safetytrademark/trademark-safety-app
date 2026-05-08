@@ -172,6 +172,7 @@ function renderField(field, container) {
     container.appendChild(div);
     return;
   }
+  if (field.type === 'toolbox-hazards') { renderToolboxHazards(field, container); return; }
 
   const wrapper = document.createElement('div');
   wrapper.className = 'field-group';
@@ -559,6 +560,89 @@ function renderCloseout(field, container) {
   });
 
   container.appendChild(body);
+}
+
+// ── Toolbox Hazard Review ─────────────────────────────────────────────────────
+function renderToolboxHazards(field, container) {
+  if (!state.fields.hazard_review) {
+    state.fields.hazard_review = TOOLBOX_HAZARDS.map(h => ({ hazard: h, risk: '', control: '', included: false }));
+    // add one blank custom row
+    state.fields.hazard_review.push({ hazard: '', risk: '', control: '', included: false, custom: true });
+  }
+  const rows = state.fields.hazard_review;
+
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
+
+  function rebuild() { wrap.innerHTML = ''; buildRows(); }
+
+  function buildRows() {
+    rows.forEach((row, i) => {
+      const card = document.createElement('div');
+      card.className = `flra-preset-item${row.included ? ' included' : ''}`;
+
+      // Header row: checkbox + hazard name + risk pill
+      const hdr = document.createElement('div');
+      hdr.className = 'flra-preset-header';
+      hdr.style.gap = '10px';
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.className = 'flra-preset-cb';
+      cb.checked = !!row.included;
+      cb.addEventListener('change', () => { rows[i].included = cb.checked; rebuild(); });
+
+      let nameEl;
+      if (row.custom) {
+        nameEl = document.createElement('input');
+        nameEl.type = 'text'; nameEl.className = 'field-input';
+        nameEl.style.cssText = 'flex:1;padding:6px 10px;font-size:13px;';
+        nameEl.placeholder = 'Other hazard / task...';
+        nameEl.value = row.hazard || '';
+        nameEl.addEventListener('input', e => { rows[i].hazard = e.target.value; });
+      } else {
+        nameEl = document.createElement('span');
+        nameEl.className = 'flra-preset-name';
+        nameEl.textContent = row.hazard;
+      }
+
+      // Risk buttons H / M / L
+      const riskWrap = document.createElement('div');
+      riskWrap.style.cssText = 'display:flex;gap:4px;flex-shrink:0;';
+      ['H', 'M', 'L'].forEach(level => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = level;
+        const cls = level === 'H' ? 'high' : level === 'M' ? 'medium' : 'low';
+        btn.className = `risk-btn${row.risk === level ? ' ' + cls : ''}`;
+        btn.style.cssText = 'flex:none;width:32px;padding:5px 0;font-size:11px;';
+        btn.addEventListener('click', () => { rows[i].risk = level; rebuild(); });
+        riskWrap.appendChild(btn);
+      });
+
+      hdr.append(cb, nameEl, riskWrap);
+      card.appendChild(hdr);
+
+      // Detail block (controls) — visible when included
+      if (row.included) {
+        const detail = document.createElement('div');
+        detail.className = 'flra-preset-detail';
+        detail.style.display = 'block';
+        const ctrl = document.createElement('textarea');
+        ctrl.className = 'field-input field-textarea';
+        ctrl.style.cssText = 'min-height:56px;font-size:13px;';
+        ctrl.placeholder = 'Control / action to mitigate this hazard...';
+        ctrl.value = row.control || '';
+        ctrl.addEventListener('input', e => { rows[i].control = e.target.value; });
+        detail.appendChild(ctrl);
+        card.appendChild(detail);
+      }
+
+      wrap.appendChild(card);
+    });
+  }
+
+  buildRows();
+  container.appendChild(wrap);
 }
 
 // ── Crew Sign-In ──────────────────────────────────────────────────────────────
