@@ -857,7 +857,7 @@ async function generateToolboxPDF(formData, photos) {
 
     // Hazard name
     doc.setFontSize(7.5); doc.setFont('helvetica', row.included ? 'bold' : 'normal');
-    doc.setTextColor(row.included ? ...NAVY : ...DGRAY);
+    if (row.included) { doc.setTextColor(...NAVY); } else { doc.setTextColor(...DGRAY); }
     const hzText = row.hazard || 'Other: ______________________________';
     const hzLines = doc.splitTextToSize(hzText, hzW - 10);
     doc.text(hzLines[0], margin + 8, y + 6);
