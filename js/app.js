@@ -25,6 +25,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Init auto-save folder
+  initFolderPicker();
+
   renderStep(1);
   attachNavListeners();
 
@@ -1404,7 +1407,17 @@ function renderStep4() {
   document.getElementById('reviewProject').textContent = state.project;
   document.getElementById('reviewType').textContent = `${typeInfo?.icon || ''} ${state.submissionType}`;
   document.getElementById('reviewPhotos').textContent = state.photos.length > 0 ? `${state.photos.length} photo(s)` : 'No photos';
-  document.getElementById('reviewOneDrivePath').textContent = `Email → ${state.submissionType} — ${state.project} — ${state.date}`;
+  const folderLabel = FileSaver.getLabel();
+  const savePath = folderLabel
+    ? `${folderLabel}/${state.project}/${state.submissionType}/${state.date}_${state.submissionType.replace(/\s+/g,'-')}.pdf`
+    : null;
+  const pathEl = document.getElementById('reviewOneDrivePath');
+  if (pathEl) {
+    pathEl.textContent = savePath || 'No folder set — email only';
+    pathEl.style.opacity = savePath ? '1' : '0.5';
+  }
+  const pathLabel = pathEl ? pathEl.previousElementSibling : null;
+  if (pathLabel) pathLabel.textContent = savePath ? '📁 Will be saved to' : '📁 Auto-save folder';
 
   const sigPreview = document.getElementById('reviewSignature');
   if (sigPreview) {
@@ -1505,6 +1518,66 @@ function clearErrors() {
   document.querySelectorAll('.error-msg').forEach(el => el.remove());
 }
 
+// ── Folder Picker ─────────────────────────────────────────────────────────────
+function updateFolderBtn() {
+  const btn   = document.getElementById('folderPickBtn');
+  const label = document.getElementById('folderPickLabel');
+  if (!btn || !label) return;
+  if (!FileSaver.isSupported()) { btn.style.display = 'none'; return; }
+  const name = FileSaver.getLabel();
+  if (name) {
+    label.textContent = name.length > 16 ? name.slice(0, 14) + '…' : name;
+    btn.classList.add('folder-pick-btn--set');
+    btn.title = `Saving to: ${name}\nClick to change`;
+  } else {
+    label.textContent = 'Set folder';
+    btn.classList.remove('folder-pick-btn--set');
+    btn.title = 'Set auto-save folder (OneDrive, Desktop, etc.)';
+  }
+}
+
+async function initFolderPicker() {
+  const btn = document.getElementById('folderPickBtn');
+  if (!btn) return;
+
+  if (!FileSaver.isSupported()) { btn.style.display = 'none'; return; }
+
+  await FileSaver.init();
+  updateFolderBtn();
+
+  btn.addEventListener('click', async () => {
+    if (FileSaver.getLabel()) {
+      // Already set — ask whether to change or forget
+      const choice = confirm(
+        `Currently saving to: "${FileSaver.getLabel()}"\n\nOK → Pick a new folder\nCancel → Remove auto-save`
+      );
+      if (choice) {
+        try {
+          await FileSaver.pick();
+          updateFolderBtn();
+          showToast(`Auto-save set to: ${FileSaver.getLabel()}`, 'success');
+        } catch (e) {
+          if (!e.message.includes('abort')) showToast(e.message, 'error');
+        }
+      } else {
+        await FileSaver.forget();
+        updateFolderBtn();
+        showToast('Auto-save folder removed.', 'info');
+      }
+    } else {
+      try {
+        await FileSaver.pick();
+        updateFolderBtn();
+        showToast(`Auto-save set to: ${FileSaver.getLabel()}`, 'success');
+      } catch (e) {
+        if (!e.message.includes('abort')) showToast(e.message, 'error');
+      }
+    }
+    // Refresh review path if on step 4
+    if (state.currentStep === 4) renderStep4();
+  });
+}
+
 // ── Submit ────────────────────────────────────────────────────────────────────
 async function handleSubmit() {
   const btn = document.getElementById('btnNext');
@@ -1520,6 +1593,20 @@ async function handleSubmit() {
 
     const pdfBuffer = await generatePDF(state, state.photos);
 
+    // ── Auto-save to local folder (OneDrive / Desktop / etc.) ────────────────
+    let savedPath = null;
+    if (FileSaver.isSupported() && FileSaver.getHandle()) {
+      try {
+        btn.textContent = 'Saving to folder...';
+        savedPath = await FileSaver.save(pdfBuffer, state.submissionType, state.project, state.date);
+        if (savedPath) showToast(`Saved: ${savedPath.split('/').slice(-1)[0]}`, 'success');
+      } catch (saveErr) {
+        // Non-fatal — log and continue with email
+        console.warn('Folder save failed:', saveErr);
+        showToast('Folder save failed — continuing with email.', 'warning');
+      }
+    }
+
     btn.textContent = 'Sending email...';
     showToast('Sending email...', 'info');
 
@@ -1532,7 +1619,7 @@ async function handleSubmit() {
       result = await downloadFallbackZip(state, pdfBuffer, state.photos);
     }
 
-    showSuccessScreen(result);
+    showSuccessScreen(result, savedPath);
   } catch (err) {
     console.error(err);
     btn.disabled = false;
@@ -1541,10 +1628,16 @@ async function handleSubmit() {
   }
 }
 
-function showSuccessScreen(result) {
+function showSuccessScreen(result, savedPath) {
   const panel = document.getElementById('step4');
   if (!panel) return;
   const isOffline = result.offline;
+  const folderRow = savedPath
+    ? `<div class="success-saved-path">
+         <span class="success-saved-icon">📁</span>
+         <span class="success-saved-text">${savedPath}</span>
+       </div>`
+    : '';
   panel.innerHTML = `
     <div class="success-screen">
       <div class="success-icon">${isOffline ? '📦' : '✅'}</div>
@@ -1554,6 +1647,7 @@ function showSuccessScreen(result) {
         : `Email sent successfully!<br><code>${result.message || ''}</code>`
       }</p>
       <p class="success-meta">${result.filesAttached ? `${result.filesAttached} file(s) attached` : ''}</p>
+      ${folderRow}
       <button class="btn btn-next" onclick="resetApp()" style="margin-top:24px;width:100%">+ New Submission</button>
     </div>`;
 }

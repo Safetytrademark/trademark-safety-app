@@ -1323,6 +1323,62 @@ body::after {
 }
 .success-meta { font-size: 13px; color: var(--text-dim); }
 
+.success-saved-path {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-md);
+  padding: 10px 14px;
+  margin-top: 14px;
+  text-align: left;
+}
+.success-saved-icon { font-size: 18px; flex-shrink: 0; }
+.success-saved-text {
+  font-size: 11px;
+  color: var(--text-muted);
+  word-break: break-all;
+  font-family: 'SF Mono', 'Menlo', 'Courier New', monospace;
+}
+
+/* ── Folder pick button ────────────────────────────────────────────────────── */
+.folder-pick-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-sm);
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease-out),
+              border-color var(--t-fast) var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
+}
+.folder-pick-btn:hover,
+.folder-pick-btn:active {
+  background: var(--surface);
+  border-color: var(--border-strong);
+}
+.folder-pick-btn--set {
+  border-color: rgba(0, 32, 91, 0.6);
+  background: rgba(0, 32, 91, 0.15);
+}
+.folder-pick-icon { font-size: 12px; }
+.folder-pick-label {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  max-width: 80px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.folder-pick-btn--set .folder-pick-label { color: var(--accent); }
+
 /* ── Nav buttons ────────────────────────────────────────────────────────── */
 /* Solid full-width backdrop strip behind the centered nav buttons */
 .nav-bar {
