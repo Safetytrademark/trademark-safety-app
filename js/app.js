@@ -1407,17 +1407,18 @@ function renderStep4() {
   document.getElementById('reviewProject').textContent = state.project;
   document.getElementById('reviewType').textContent = `${typeInfo?.icon || ''} ${state.submissionType}`;
   document.getElementById('reviewPhotos').textContent = state.photos.length > 0 ? `${state.photos.length} photo(s)` : 'No photos';
-  const folderLabel = FileSaver.getLabel();
-  const savePath = folderLabel
-    ? `${folderLabel}/${state.project}/${state.submissionType}/${state.date}_${state.submissionType.replace(/\s+/g,'-')}.pdf`
+  const folderReady = FileSaver.isSupported() && FileSaver.getHandle();
+  const safeName    = (state.submissionType || '').replace(/\s+/g, '-');
+  const savePath    = folderReady
+    ? `${TARGET_FOLDER} / ${state.project} / ${state.submissionType} / ${state.date}_${safeName}.pdf`
     : null;
   const pathEl = document.getElementById('reviewOneDrivePath');
   if (pathEl) {
-    pathEl.textContent = savePath || 'No folder set — email only';
+    pathEl.textContent = savePath || (FileSaver.isSupported() ? 'Setup pending — email only' : 'Email only (folder save not supported on this browser)');
     pathEl.style.opacity = savePath ? '1' : '0.5';
   }
   const pathLabel = pathEl ? pathEl.previousElementSibling : null;
-  if (pathLabel) pathLabel.textContent = savePath ? '📁 Will be saved to' : '📁 Auto-save folder';
+  if (pathLabel) pathLabel.textContent = '📁 Will be saved to';
 
   const sigPreview = document.getElementById('reviewSignature');
   if (sigPreview) {
@@ -1518,64 +1519,54 @@ function clearErrors() {
   document.querySelectorAll('.error-msg').forEach(el => el.remove());
 }
 
-// ── Folder Picker ─────────────────────────────────────────────────────────────
-function updateFolderBtn() {
-  const btn   = document.getElementById('folderPickBtn');
-  const label = document.getElementById('folderPickLabel');
-  if (!btn || !label) return;
-  if (!FileSaver.isSupported()) { btn.style.display = 'none'; return; }
-  const name = FileSaver.getLabel();
-  if (name) {
-    label.textContent = name.length > 16 ? name.slice(0, 14) + '…' : name;
-    btn.classList.add('folder-pick-btn--set');
-    btn.title = `Saving to: ${name}\nClick to change`;
-  } else {
-    label.textContent = 'Set folder';
-    btn.classList.remove('folder-pick-btn--set');
-    btn.title = 'Set auto-save folder (OneDrive, Desktop, etc.)';
-  }
+// ── Folder Auto-Save (fixed path, one-time browser permission) ───────────────
+// The destination is always:
+//   Safety Documents / [Project] / [Form Type] / YYYY-MM-DD_Form-Type.pdf
+// Foremans never see the folder picker. On first use the app shows a
+// one-time banner asking admin to locate the Safety Documents folder.
+// After that it is completely silent.
+
+const TARGET_FOLDER = 'Safety Documents'; // friendly name shown in UI
+
+function updateFolderStatus() {
+  const el = document.getElementById('folderStatus');
+  if (!el) return;
+  const ready = FileSaver.isSupported() && FileSaver.getHandle();
+  el.className = ready ? 'folder-status folder-status--ready' : 'folder-status';
+  el.title     = ready ? `Auto-save → ${TARGET_FOLDER}` : 'Auto-save not configured';
 }
 
 async function initFolderPicker() {
-  const btn = document.getElementById('folderPickBtn');
-  if (!btn) return;
+  if (!FileSaver.isSupported()) return; // Safari / Firefox — email only
 
-  if (!FileSaver.isSupported()) { btn.style.display = 'none'; return; }
+  const ready = await FileSaver.init(); // restore persisted handle
+  updateFolderStatus();
 
-  await FileSaver.init();
-  updateFolderBtn();
+  if (ready) return; // already configured — nothing more to do
 
-  btn.addEventListener('click', async () => {
-    if (FileSaver.getLabel()) {
-      // Already set — ask whether to change or forget
-      const choice = confirm(
-        `Currently saving to: "${FileSaver.getLabel()}"\n\nOK → Pick a new folder\nCancel → Remove auto-save`
-      );
-      if (choice) {
-        try {
-          await FileSaver.pick();
-          updateFolderBtn();
-          showToast(`Auto-save set to: ${FileSaver.getLabel()}`, 'success');
-        } catch (e) {
-          if (!e.message.includes('abort')) showToast(e.message, 'error');
-        }
-      } else {
-        await FileSaver.forget();
-        updateFolderBtn();
-        showToast('Auto-save folder removed.', 'info');
-      }
-    } else {
+  // ── First time on this device: show the setup banner ─────────────────────
+  const banner    = document.getElementById('folderSetupBanner');
+  const setupBtn  = document.getElementById('folderSetupBtn');
+  if (banner) banner.style.display = 'flex';
+
+  if (setupBtn) {
+    setupBtn.addEventListener('click', async () => {
       try {
+        setupBtn.disabled = true;
+        setupBtn.textContent = 'Opening…';
         await FileSaver.pick();
-        updateFolderBtn();
-        showToast(`Auto-save set to: ${FileSaver.getLabel()}`, 'success');
+        if (banner) banner.style.display = 'none';
+        updateFolderStatus();
+        showToast('Auto-save configured! PDFs will save to Safety Documents automatically.', 'success');
       } catch (e) {
-        if (!e.message.includes('abort')) showToast(e.message, 'error');
+        setupBtn.disabled = false;
+        setupBtn.textContent = 'Select Folder';
+        if (!e.message.includes('abort')) {
+          showToast('Could not set folder: ' + e.message, 'error');
+        }
       }
-    }
-    // Refresh review path if on step 4
-    if (state.currentStep === 4) renderStep4();
-  });
+    });
+  }
 }
 
 // ── Submit ────────────────────────────────────────────────────────────────────

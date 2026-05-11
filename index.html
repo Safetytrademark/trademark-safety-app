@@ -31,10 +31,7 @@
       <div class="status-row">
         <div class="status-dot" id="backendStatus" title="Checking server..."></div>
       </div>
-      <button class="folder-pick-btn" id="folderPickBtn" title="Set auto-save folder">
-        <span class="folder-pick-icon">📁</span>
-        <span class="folder-pick-label" id="folderPickLabel">Set folder</span>
-      </button>
+      <div class="folder-status" id="folderStatus" title="Auto-save to Safety Documents"></div>
     </div>
   </header>
 
@@ -169,6 +166,19 @@
   </section>
 
 </div><!-- /.app -->
+
+<!-- One-time folder setup banner (shown only when no folder is saved yet) -->
+<div class="folder-setup-banner" id="folderSetupBanner" style="display:none">
+  <div class="folder-setup-inner">
+    <div class="folder-setup-icon">📁</div>
+    <div class="folder-setup-text">
+      <strong>One-time setup required</strong>
+      <span>Select the Safety Documents folder so PDFs are saved automatically.</span>
+      <code>OneDrive → Trademark → Operations → Projects → Ongoing Projects → Safety Documents</code>
+    </div>
+    <button class="folder-setup-btn" id="folderSetupBtn">Select Folder</button>
+  </div>
+</div>
 
 <!-- Toast notifications -->
 <div class="toast" id="errorToast" role="alert" aria-live="polite"></div>
