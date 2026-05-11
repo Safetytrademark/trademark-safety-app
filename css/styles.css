@@ -87,9 +87,7 @@
 }
 
 /* ── Page base ──────────────────────────────────────────────────────────── */
-html { font-size: 16px; -webkit-text-size-adjust: 100%; }
-
-html, body { height: 100%; }
+html { font-size: 16px; -webkit-text-size-adjust: 100%; overflow-x: hidden; }
 
 body {
   background: var(--bg-0);
@@ -98,7 +96,6 @@ body {
   font-feature-settings: "ss01", "cv11";
   line-height: 1.5;
   min-height: 100dvh;
-  padding-bottom: calc(320px + env(safe-area-inset-bottom));
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
@@ -137,6 +134,10 @@ body::after {
   max-width: 520px;
   margin: 0 auto;
   padding: 0 18px;
+  /* Bottom padding ensures content always scrolls clear of the fixed nav bar.
+     Placed on .app (in document flow) rather than body to work reliably on
+     iOS Safari, where body padding-bottom is ignored when height:100% is set. */
+  padding-bottom: calc(140px + env(safe-area-inset-bottom));
   position: relative;
 }
 

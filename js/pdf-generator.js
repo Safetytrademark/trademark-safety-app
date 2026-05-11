@@ -164,7 +164,8 @@ async function generatePDF(formData, photos) {
 
   // â”€â”€ Signature â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (formData.signature) {
-    if (y > pageH - 50) { doc.addPage(); y = margin; }
+    // Supervisor section needs ~80mm (header 9 + disclaimer 20 + name 8 + sig box 32 + label 10)
+    if (y > pageH - 85) { doc.addPage(); y = margin; }
     y = renderSignaturePDF(doc, formData, y, margin, contentW, { NAVY, RED, WHITE, LGRAY, DGRAY, MGRAY, BG });
   }
 
@@ -516,6 +517,10 @@ async function renderPhotosPDF(doc, photos, y, margin, contentW, pageH, C) {
 
 // â”€â”€ Signature â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function renderSignaturePDF(doc, formData, y, margin, contentW, C) {
+  const pageH = doc.internal.pageSize.getHeight();
+  // Guard: if less than 85mm remain on this page, start a fresh page
+  if (y > pageH - 85) { doc.addPage(); y = margin; }
+
   doc.setFillColor(...C.NAVY);
   doc.rect(margin, y, contentW, 7, 'F');
   doc.setFontSize(8);
