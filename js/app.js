@@ -148,10 +148,26 @@ function renderStep3() {
   state.signature = null;
   window._signaturePad = null;
 
+  // Pre-fill defaults for Daily Tailgate
+  if (state.submissionType === 'Daily Tailgate') applyDailyTailgateDefaults();
+
   const fields = FORM_FIELDS[state.submissionType] || [];
   fields.forEach(field => renderField(field, container));
 
   setupPhotoUpload();
+}
+
+// ── Daily Tailgate — pre-fill defaults ───────────────────────────────────────
+function applyDailyTailgateDefaults() {
+  // Checkboxes: standard items already checked based on daily masonry operations
+  state.fields.items_reviewed = { ...DEFAULT_TAILGATE_CHECKED };
+
+  // FLRA: pre-select the first N core tasks (rest stay unchecked)
+  state.fields.flra = DEFAULT_FLRA_TASKS.map((t, i) => ({
+    ...t,
+    hazards: [...t.hazards],
+    included: i < DEFAULT_FLRA_INCLUDED_COUNT
+  }));
 }
 
 function renderField(field, container) {

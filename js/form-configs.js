@@ -281,6 +281,34 @@ const TOOLBOX_HAZARDS = [
   'Adverse weather — heat, cold, rain, wind'
 ];
 
+// ── DAILY TAILGATE — DEFAULT PRE-CHECKED ITEMS ───────────────────────────────
+// Based on standard Trademark masonry daily operations.
+// Foremans can uncheck what does not apply today.
+const DEFAULT_TAILGATE_CHECKED = {
+  // Permits & PPE
+  'Task-Appropriate Gloves':        true,
+  'Eye Protection (safety glasses)': true,
+  'Respirator / Dust Mask':         true,
+  'Hard Hat & Safety Boots':        true,
+  // Work Surfaces & Equipment
+  'Uneven or Slippery Surfaces':    true,
+  'Mobile Equipment in Area':       true,
+  'Telehandler / Forklift Inspected': true,
+  'Material Storage & Securement':  true,
+  'Scaffold Inspected & Tagged':    true,
+  // Masonry & Site Conditions
+  'Silica / Dust Exposure (cutting)': true,
+  'Mortar / Grout Handling':        true,
+  'Sharp Edges on Block / Steel':   true,
+  'Housekeeping Maintained':        true,
+  // Fall Protection
+  'Guardrails in Place':            true,
+  'Full Body Harness Required':     true
+};
+
+// How many of the DEFAULT_FLRA_TASKS are active by default (the core 6 daily tasks)
+const DEFAULT_FLRA_INCLUDED_COUNT = 6;
+
 // ── FLRA HAZARDS LIST ─────────────────────────────────────────────────────────
 const FLRA_HAZARDS = [
   'Others Working Above / Below',
