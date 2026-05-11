@@ -25,8 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Init auto-save folder
-  initFolderPicker();
 
   renderStep(1);
   attachNavListeners();
@@ -1407,18 +1405,13 @@ function renderStep4() {
   document.getElementById('reviewProject').textContent = state.project;
   document.getElementById('reviewType').textContent = `${typeInfo?.icon || ''} ${state.submissionType}`;
   document.getElementById('reviewPhotos').textContent = state.photos.length > 0 ? `${state.photos.length} photo(s)` : 'No photos';
-  const folderReady = FileSaver.isSupported() && FileSaver.getHandle();
-  const safeName    = (state.submissionType || '').replace(/\s+/g, '-');
-  const savePath    = folderReady
-    ? `${TARGET_FOLDER} / ${state.project} / ${state.submissionType} / ${state.date}_${safeName}.pdf`
-    : null;
-  const pathEl = document.getElementById('reviewOneDrivePath');
-  if (pathEl) {
-    pathEl.textContent = savePath || (FileSaver.isSupported() ? 'Setup pending — email only' : 'Email only (folder save not supported on this browser)');
-    pathEl.style.opacity = savePath ? '1' : '0.5';
-  }
+  const safeName  = (state.submissionType || '').replace(/\s+/g, '-');
+  const safeProj  = (state.project || '').replace(/[^a-zA-Z0-9\-_ ]/g, '').trim().replace(/\s+/g, '-');
+  const pdfName   = `${state.date}_${safeName}_${safeProj}.pdf`;
+  const pathEl    = document.getElementById('reviewOneDrivePath');
+  if (pathEl) { pathEl.textContent = pdfName; pathEl.style.opacity = '1'; }
   const pathLabel = pathEl ? pathEl.previousElementSibling : null;
-  if (pathLabel) pathLabel.textContent = '📁 Will be saved to';
+  if (pathLabel) pathLabel.textContent = '⬇️ Will download as';
 
   const sigPreview = document.getElementById('reviewSignature');
   if (sigPreview) {
@@ -1519,53 +1512,26 @@ function clearErrors() {
   document.querySelectorAll('.error-msg').forEach(el => el.remove());
 }
 
-// ── Folder Auto-Save (fixed path, one-time browser permission) ───────────────
-// The destination is always:
-//   Safety Documents / [Project] / [Form Type] / YYYY-MM-DD_Form-Type.pdf
-// Foremans never see the folder picker. On first use the app shows a
-// one-time banner asking admin to locate the Safety Documents folder.
-// After that it is completely silent.
-
-const TARGET_FOLDER = 'Safety Documents'; // friendly name shown in UI
-
-function updateFolderStatus() {
-  const el = document.getElementById('folderStatus');
-  if (!el) return;
-  const ready = FileSaver.isSupported() && FileSaver.getHandle();
-  el.className = ready ? 'folder-status folder-status--ready' : 'folder-status';
-  el.title     = ready ? `Auto-save → ${TARGET_FOLDER}` : 'Auto-save not configured';
+// ── Auto-download helper ──────────────────────────────────────────────────────
+function buildPDFFilename() {
+  const type = (state.submissionType || 'Report').replace(/\s+/g, '-');
+  const proj = (state.project || '').replace(/[^a-zA-Z0-9\- ]/g, '').trim().replace(/\s+/g, '-');
+  return proj ? `${state.date}_${type}_${proj}.pdf` : `${state.date}_${type}.pdf`;
 }
 
-async function initFolderPicker() {
-  if (!FileSaver.isSupported()) return; // Safari / Firefox — email only
-
-  const ready = await FileSaver.init(); // restore persisted handle
-  updateFolderStatus();
-
-  if (ready) return; // already configured — nothing more to do
-
-  // ── First time on this device: show the setup banner ─────────────────────
-  const banner    = document.getElementById('folderSetupBanner');
-  const setupBtn  = document.getElementById('folderSetupBtn');
-  if (banner) banner.style.display = 'flex';
-
-  if (setupBtn) {
-    setupBtn.addEventListener('click', async () => {
-      try {
-        setupBtn.disabled = true;
-        setupBtn.textContent = 'Opening…';
-        await FileSaver.pick();
-        if (banner) banner.style.display = 'none';
-        updateFolderStatus();
-        showToast('Auto-save configured! PDFs will save to Safety Documents automatically.', 'success');
-      } catch (e) {
-        setupBtn.disabled = false;
-        setupBtn.textContent = 'Select Folder';
-        if (!e.message.includes('abort')) {
-          showToast('Could not set folder: ' + e.message, 'error');
-        }
-      }
-    });
+function triggerDownload(buffer, filename) {
+  try {
+    const blob = new Blob([buffer], { type: 'application/pdf' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  } catch (e) {
+    console.warn('Auto-download failed:', e);
   }
 }
 
@@ -1582,21 +1548,12 @@ async function handleSubmit() {
       state.signature = window._signaturePad.toDataURL('image/png');
     }
 
-    const pdfBuffer = await generatePDF(state, state.photos);
+    const pdfBuffer  = await generatePDF(state, state.photos);
+    const pdfFilename = buildPDFFilename();
 
-    // ── Auto-save to local folder (OneDrive / Desktop / etc.) ────────────────
-    let savedPath = null;
-    if (FileSaver.isSupported() && FileSaver.getHandle()) {
-      try {
-        btn.textContent = 'Saving to folder...';
-        savedPath = await FileSaver.save(pdfBuffer, state.submissionType, state.project, state.date);
-        if (savedPath) showToast(`Saved: ${savedPath.split('/').slice(-1)[0]}`, 'success');
-      } catch (saveErr) {
-        // Non-fatal — log and continue with email
-        console.warn('Folder save failed:', saveErr);
-        showToast('Folder save failed — continuing with email.', 'warning');
-      }
-    }
+    // ── Auto-download PDF immediately on every device ──────────────────────
+    triggerDownload(pdfBuffer, pdfFilename);
+    showToast(`⬇️ ${pdfFilename}`, 'success');
 
     btn.textContent = 'Sending email...';
     showToast('Sending email...', 'info');
@@ -1610,7 +1567,7 @@ async function handleSubmit() {
       result = await downloadFallbackZip(state, pdfBuffer, state.photos);
     }
 
-    showSuccessScreen(result, savedPath);
+    showSuccessScreen(result, pdfFilename);
   } catch (err) {
     console.error(err);
     btn.disabled = false;
@@ -1619,16 +1576,10 @@ async function handleSubmit() {
   }
 }
 
-function showSuccessScreen(result, savedPath) {
+function showSuccessScreen(result, pdfFilename) {
   const panel = document.getElementById('step4');
   if (!panel) return;
   const isOffline = result.offline;
-  const folderRow = savedPath
-    ? `<div class="success-saved-path">
-         <span class="success-saved-icon">📁</span>
-         <span class="success-saved-text">${savedPath}</span>
-       </div>`
-    : '';
   panel.innerHTML = `
     <div class="success-screen">
       <div class="success-icon">${isOffline ? '📦' : '✅'}</div>
@@ -1638,7 +1589,7 @@ function showSuccessScreen(result, savedPath) {
         : `Email sent successfully!<br><code>${result.message || ''}</code>`
       }</p>
       <p class="success-meta">${result.filesAttached ? `${result.filesAttached} file(s) attached` : ''}</p>
-      ${folderRow}
+      ${pdfFilename ? `<div class="success-saved-path"><span class="success-saved-icon">⬇️</span><span class="success-saved-text">${pdfFilename}</span></div>` : ''}
       <button class="btn btn-next" onclick="resetApp()" style="margin-top:24px;width:100%">+ New Submission</button>
     </div>`;
 }
