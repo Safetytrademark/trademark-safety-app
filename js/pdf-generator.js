@@ -797,7 +797,7 @@ async function generateToolboxPDF(formData, photos) {
       doc.setFillColor(...NAVY); doc.rect(tx + 0.5, ty - 3, 3, 3, 'F');
     }
     doc.setFontSize(7); doc.setFont('helvetica', isChecked ? 'bold' : 'normal');
-    doc.setTextColor(isChecked ? ...NAVY : ...DGRAY);
+    if (isChecked) { doc.setTextColor(...NAVY); } else { doc.setTextColor(...DGRAY); }
     doc.text(topic, tx + 5.5, ty);
   });
 
