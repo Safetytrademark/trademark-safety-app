@@ -352,41 +352,67 @@ async function renderDailyTailgatePDF(doc, formData, y, pageW, pageH, margin, co
     y += 14;
   }
 
-  // Crew Sign-In
+  // Crew Sign-In with signatures
   const crew = formData.fields.crew || [];
   const filledCrew = crew.filter(m => m.name);
   if (filledCrew.length > 0) {
-    checkNewPage(20 + filledCrew.length * 7);
+    const rowH = 16;
+    checkNewPage(18 + filledCrew.length * rowH);
+
+    // Section header
     doc.setFillColor(...C.NAVY);
     doc.rect(margin, y, contentW, 7, 'F');
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...C.WHITE);
-    doc.text('CREW SIGN-IN', margin + 3, y + 5);
-    y += 9;
+    doc.setFillColor(...C.RED);
+    doc.rect(margin, y, 3, 7, 'F');
+    doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.WHITE);
+    doc.text('CREW SIGN-IN', margin + 6, y + 5);
+    y += 7;
 
-    // Render names in 2 columns
-    const colW2 = contentW / 2;
-    filledCrew.forEach((member, i) => {
-      const col = i % 2;
-      const xPos = margin + col * colW2;
-      if (col === 0) {
-        // start new row pair
-        doc.setFillColor(i % 4 < 2 ? 255 : 248, i % 4 < 2 ? 255 : 248, i % 4 < 2 ? 255 : 248);
-        doc.rect(margin, y, contentW, 6.5, 'F');
+    // Column header
+    const nameColW = contentW * 0.42;
+    const sigColW  = contentW - nameColW;
+    doc.setFillColor(230, 235, 248); doc.setDrawColor(...C.LGRAY); doc.setLineWidth(0.2);
+    doc.rect(margin, y, contentW, 6, 'FD');
+    doc.setFontSize(6.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.NAVY);
+    doc.text('#   PRINT NAME', margin + 3, y + 4.2);
+    doc.text('SIGNATURE', margin + nameColW + 3, y + 4.2);
+    y += 6;
+
+    for (let i = 0; i < filledCrew.length; i++) {
+      const member = filledCrew[i];
+      if (y + rowH > pageH - 18) {
+        doc.addPage(); y = margin;
+        drawHeaderStrip(doc, formData, pageW, C);
+        y = margin + 10;
       }
-      doc.setFontSize(8.5);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...C.DGRAY);
-      // small number prefix
-      doc.setFontSize(7);
-      doc.setTextColor(...C.MGRAY);
-      doc.text(`${i + 1}.`, xPos + 2, y + 4.5);
-      doc.setFontSize(8.5);
-      doc.setTextColor(...C.DGRAY);
-      doc.text(member.name || '', xPos + 7, y + 4.5);
-      if (col === 1 || i === filledCrew.length - 1) y += 6.5;
-    });
+      const bg = i % 2 === 0 ? C.BG : [240, 243, 250];
+      doc.setFillColor(...bg); doc.setDrawColor(...C.LGRAY); doc.setLineWidth(0.2);
+      doc.rect(margin, y, nameColW, rowH, 'FD');
+      doc.rect(margin + nameColW, y, sigColW, rowH, 'FD');
+
+      // Number badge
+      doc.setFillColor(...C.NAVY);
+      doc.roundedRect(margin + 2, y + 3, 6, 6, 1, 1, 'F');
+      doc.setFontSize(6.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.WHITE);
+      doc.text(String(i + 1), margin + 5, y + 7.2, { align: 'center' });
+
+      // Name
+      doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.DGRAY);
+      doc.text(member.name || '', margin + 11, y + 7.2);
+
+      // Signature image
+      if (member.sig) {
+        try {
+          doc.addImage(member.sig, 'PNG', margin + nameColW + 2, y + 1.5, sigColW - 4, rowH - 3);
+        } catch(e) {}
+      } else {
+        // blank line placeholder
+        doc.setDrawColor(...C.LGRAY); doc.setLineWidth(0.3);
+        doc.line(margin + nameColW + 4, y + rowH - 3, margin + nameColW + sigColW - 4, y + rowH - 3);
+      }
+
+      y += rowH;
+    }
     y += 4;
   }
 

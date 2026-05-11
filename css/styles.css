@@ -772,8 +772,28 @@ body::after {
 }
 
 /* ── Crew sign-in ───────────────────────────────────────────────────────── */
-.crew-row {
-  display: flex; gap: 8px; margin-bottom: 8px; align-items: center;
+.crew-card {
+  background: var(--surface-flat);
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--r-md);
+  padding: 14px;
+  margin-bottom: 12px;
+  transition: border-color var(--t-fast);
+}
+.crew-card:focus-within { border-color: var(--accent); }
+
+.crew-card-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+}
+.crew-num {
+  flex-shrink: 0;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--gradient-navy);
+  color: #fff;
+  font-size: 11px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--inner-hi);
 }
 .crew-name { flex: 1; }
 .crew-remove {
@@ -786,16 +806,50 @@ body::after {
   transition: color var(--t-fast);
 }
 .crew-remove:hover { color: var(--accent); }
-.crew-header {
-  display: flex; gap: 8px; margin-bottom: 8px;
-  font-size: 10px;
-  font-weight: 800;
+
+.crew-sig-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--text-dim);
+  margin-bottom: 6px;
 }
-.crew-header span:first-child { flex: 1; }
-.crew-header span:last-child { width: 28px; flex-shrink: 0; }
+.crew-sig-wrap {
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  background: #fff;
+}
+.crew-sig-canvas {
+  width: 100%;
+  height: 72px;
+  display: block;
+  touch-action: none;
+  cursor: crosshair;
+}
+.crew-sig-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 10px;
+  background: var(--surface-flat);
+  border-top: 1px solid var(--border);
+}
+.crew-sig-hint { font-size: 11px; color: var(--text-dim); }
+.crew-sig-clear {
+  background: none;
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: border-color var(--t-fast), color var(--t-fast);
+}
+.crew-sig-clear:hover { border-color: var(--accent); color: var(--accent); }
 
 .add-crew-btn {
   width: 100%;

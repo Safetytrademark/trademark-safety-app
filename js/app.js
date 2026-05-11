@@ -656,13 +656,8 @@ function renderCrewSignin(field, container) {
   body.className = 'section-body';
 
   if (!state.fields[field.id] || state.fields[field.id].length === 0) {
-    state.fields[field.id] = [{ name: '' }];
+    state.fields[field.id] = [{ name: '', sig: null }];
   }
-
-  const hdr = document.createElement('div');
-  hdr.className = 'crew-header';
-  hdr.innerHTML = '<span>Worker Name</span><span></span>';
-  body.appendChild(hdr);
 
   const rowsWrap = document.createElement('div');
   rowsWrap.id = 'crewRows';
@@ -675,7 +670,7 @@ function renderCrewSignin(field, container) {
   addBtn.className = 'add-crew-btn';
   addBtn.textContent = '+ Add Worker';
   addBtn.addEventListener('click', () => {
-    state.fields[field.id].push({ name: '' });
+    state.fields[field.id].push({ name: '', sig: null });
     renderCrewRow(rowsWrap, state.fields[field.id].length - 1);
   });
   body.appendChild(addBtn);
@@ -684,8 +679,16 @@ function renderCrewSignin(field, container) {
 
 function renderCrewRow(container, index) {
   const member = state.fields.crew[index];
-  const row = document.createElement('div');
-  row.className = 'crew-row';
+  const card = document.createElement('div');
+  card.className = 'crew-card';
+
+  // ── Name row ─────────────────────────────────────────────
+  const nameRow = document.createElement('div');
+  nameRow.className = 'crew-card-header';
+
+  const num = document.createElement('span');
+  num.className = 'crew-num';
+  num.textContent = index + 1;
 
   const nameInput = document.createElement('input');
   nameInput.className = 'field-input crew-name';
@@ -706,9 +709,69 @@ function renderCrewRow(container, index) {
     state.fields.crew.forEach((_, i) => renderCrewRow(wrap, i));
   });
 
-  row.appendChild(nameInput);
-  row.appendChild(removeBtn);
-  container.appendChild(row);
+  nameRow.append(num, nameInput, removeBtn);
+  card.appendChild(nameRow);
+
+  // ── Signature area ────────────────────────────────────────
+  const sigLabel = document.createElement('div');
+  sigLabel.className = 'crew-sig-label';
+  sigLabel.textContent = 'Signature';
+  card.appendChild(sigLabel);
+
+  const sigWrap = document.createElement('div');
+  sigWrap.className = 'crew-sig-wrap';
+
+  const canvas = document.createElement('canvas');
+  canvas.className = 'crew-sig-canvas';
+  // Set pixel resolution after mount (rAF gives layout time to settle)
+  sigWrap.appendChild(canvas);
+
+  const sigActions = document.createElement('div');
+  sigActions.className = 'crew-sig-actions';
+
+  const hint = document.createElement('span');
+  hint.className = 'crew-sig-hint';
+  hint.textContent = 'Sign with finger';
+
+  const clearBtn = document.createElement('button');
+  clearBtn.type = 'button';
+  clearBtn.className = 'crew-sig-clear';
+  clearBtn.textContent = 'Clear';
+
+  sigActions.append(hint, clearBtn);
+  sigWrap.appendChild(sigActions);
+  card.appendChild(sigWrap);
+  container.appendChild(card);
+
+  // Init SignaturePad after the canvas is in the DOM
+  requestAnimationFrame(() => {
+    const ratio = window.devicePixelRatio || 1;
+    canvas.width  = canvas.offsetWidth  * ratio;
+    canvas.height = canvas.offsetHeight * ratio;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(ratio, ratio);
+
+    const pad = new SignaturePad(canvas, {
+      penColor: '#1a1a2e',
+      backgroundColor: 'rgba(255,255,255,0)',
+      minWidth: 1,
+      maxWidth: 2.5,
+    });
+
+    // Restore saved signature
+    if (member.sig) {
+      pad.fromDataURL(member.sig, { ratio: 1, width: canvas.offsetWidth, height: canvas.offsetHeight });
+    }
+
+    pad.addEventListener('endStroke', () => {
+      state.fields.crew[index].sig = pad.toDataURL('image/png');
+    });
+
+    clearBtn.addEventListener('click', () => {
+      pad.clear();
+      state.fields.crew[index].sig = null;
+    });
+  });
 }
 
 // ── Signature Pad ─────────────────────────────────────────────────────────────
