@@ -1564,24 +1564,21 @@ async function handleSubmit() {
       state.signature = window._signaturePad.toDataURL('image/png');
     }
 
-    const pdfBuffer  = await generatePDF(state, state.photos);
+    const pdfBuffer   = await generatePDF(state, state.photos);
     const pdfFilename = buildPDFFilename();
-
-    // ── Auto-download PDF immediately on every device ──────────────────────
-    triggerDownload(pdfBuffer, pdfFilename);
-    showToast(`⬇️ ${pdfFilename}`, 'success');
 
     btn.textContent = 'Sending email...';
     showToast('Sending email...', 'info');
 
     const online = await checkBackendHealth();
-    let result;
-    if (online) {
-      result = await submitToOneDrive(state, pdfBuffer, state.photos);
-    } else {
-      showToast('Server offline — downloading ZIP...', 'warning');
-      result = await downloadFallbackZip(state, pdfBuffer, state.photos);
+    if (!online) {
+      throw new Error('Server is offline. Please try again in a moment.');
     }
+
+    const result = await submitForm(state, pdfBuffer, state.photos);
+
+    // Download PDF only after email is confirmed sent
+    triggerDownload(pdfBuffer, pdfFilename);
 
     showSuccessScreen(result, pdfFilename);
   } catch (err) {
@@ -1595,17 +1592,13 @@ async function handleSubmit() {
 function showSuccessScreen(result, pdfFilename) {
   const panel = document.getElementById('step4');
   if (!panel) return;
-  const isOffline = result.offline;
   panel.innerHTML = `
     <div class="success-screen">
-      <div class="success-icon">${isOffline ? '📦' : '✅'}</div>
-      <h2 class="success-title">${isOffline ? 'Downloaded!' : 'Submitted!'}</h2>
-      <p class="success-msg">${isOffline
-        ? `ZIP downloaded.<br><code>${result.message?.split('\n').pop() || ''}</code>`
-        : `Email sent successfully!<br><code>${result.message || ''}</code>`
-      }</p>
+      <div class="success-icon">✅</div>
+      <h2 class="success-title">Submitted!</h2>
+      <p class="success-msg">Email sent successfully!<br><code>${result.message || ''}</code></p>
       <p class="success-meta">${result.filesAttached ? `${result.filesAttached} file(s) attached` : ''}</p>
-      ${pdfFilename ? `<div class="success-saved-path"><span class="success-saved-icon">⬇️</span><span class="success-saved-text">${pdfFilename}</span></div>` : ''}
+      ${pdfFilename ? `<div class="success-saved-path"><span class="success-saved-icon">⬇️</span><span class="success-saved-text">${pdfFilename} downloaded</span></div>` : ''}
       <button class="btn btn-next" onclick="resetApp()" style="margin-top:24px;width:100%">+ New Submission</button>
     </div>`;
 }
