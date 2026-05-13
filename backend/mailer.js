@@ -1,13 +1,7 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
-function getTransport() {
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY);
 }
 
 async function sendSafetySubmission({ foremanName, project, submissionType, date, workersOnSite, fields, pdfBuffer, pdfName, photos }) {
@@ -115,7 +109,7 @@ async function sendSafetySubmission({ foremanName, project, submissionType, date
   if (pdfBuffer) {
     attachments.push({
       filename: pdfName,
-      content: Buffer.from(pdfBuffer),
+      content: Buffer.from(pdfBuffer).toString('base64'),
     });
   }
 
@@ -125,25 +119,30 @@ async function sendSafetySubmission({ foremanName, project, submissionType, date
     const safeName = pdfName.replace('.pdf', '') + `_photo${String(i + 1).padStart(2, '0')}.${ext}`;
     attachments.push({
       filename: safeName,
-      content: photo.buffer,
+      content: photo.buffer.toString('base64'),
     });
   }
 
-  const transport = getTransport();
-  await transport.sendMail({
-    from: `"Trademark Safety" <${process.env.EMAIL_USER}>`,
-    to: recipient,
+  const resend = getResend();
+  const result = await resend.emails.send({
+    from: 'Trademark Safety <onboarding@resend.dev>',
+    to: [recipient],
     subject: `[Safety] ${submissionType} — ${project} — ${date}`,
     html,
-    attachments,
+    attachments
   });
+
+  if (result.error) {
+    throw new Error(result.error.message || 'Resend API error');
+  }
 
   return { recipient, filesAttached: attachments.length };
 }
 
 async function testConnection() {
-  const transport = getTransport();
-  await transport.verify();
+  if (!process.env.RESEND_API_KEY) {
+    throw new Error('RESEND_API_KEY not set');
+  }
 }
 
 module.exports = { sendSafetySubmission, testConnection };
